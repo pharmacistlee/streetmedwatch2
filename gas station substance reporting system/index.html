@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Backend location. For local development leave as-is. Before going live, change
+     this to your deployed API, e.g. "https://api.yourdomain.org" -->
+<script>window.STREETMEDWATCH_API = "http://localhost:4000";</script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StreetMedWatch — community adverse-reaction reports</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; background: #F7F4EE; -webkit-font-smoothing: antialiased; }
+  a { color: #24466E; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: #B02A1D; }
+  input, select, textarea, button { font: inherit; }
+  :focus-visible { outline: 3px solid #24466E; outline-offset: 2px; }
+  @keyframes smw-pulse { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+  ::selection { background: #E8C9C3; }
+</style>
+</helmet>
+
+<div style="font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #171310; background: #F7F4EE; min-height: 100vh; font-size: 16px; line-height: 1.55;">
+
+  <div style="background: #171310; color: #E9E3D8; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .11em; text-transform: uppercase;">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 7px 24px; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center;">
+      <span>Community adverse-reaction reporting · Independent · Not medical advice</span>
+      <span style="display: flex; align-items: center; gap: 8px; color: #C9C1B2;">
+        <span style="width: 7px; height: 7px; background: #C98A16; border-radius: 50%; animation: smw-pulse 2.4s ease-in-out infinite;"></span>
+        {{ totalReports }} reports on file
+      </span>
+    </div>
+  </div>
+
+  <header style="background: #F7F4EE; border-bottom: 1px solid #D8D2C6; position: sticky; top: 0; z-index: 40;">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 28px; flex-wrap: wrap;">
+      <a href="#home" onClick="{{ goHome }}" style="display: flex; align-items: center; gap: 11px; text-decoration: none; color: #171310;">
+        <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="1.5" y="1.5" width="21" height="21" fill="none" stroke="#171310" stroke-width="2"></rect>
+          <rect x="1.5" y="15.5" width="21" height="7" fill="#B02A1D"></rect>
+          <circle cx="12" cy="9" r="2.6" fill="#171310"></circle>
+        </svg>
+        <span style="display: flex; flex-direction: column; line-height: 1.05;">
+          <strong style="font-family: 'Newsreader', serif; font-size: 21px; font-weight: 600; letter-spacing: -.01em;">StreetMedWatch</strong>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C;">Adverse-reaction registry</span>
+        </span>
+      </a>
+      <nav aria-label="Main" style="display: flex; gap: 22px; flex-wrap: wrap; margin-left: auto; align-items: center; font-size: 14.5px;">
+        <a href="#reports" onClick="{{ goReports }}" style="color: #171310; text-decoration: none; padding-bottom: 3px; border-bottom: 2px solid transparent;">Browse reports<sc-if value="{{ isReports }}" hint-placeholder-val="{{ false }}"><span style="display: block; height: 2px; background: #B02A1D; margin: 2px -1px -5px;"></span></sc-if></a>
+        <a href="#guide" onClick="{{ goGuide }}" style="color: #171310; text-decoration: none; padding-bottom: 3px;">Product guide<sc-if value="{{ isGuide }}" hint-placeholder-val="{{ false }}"><span style="display: block; height: 2px; background: #B02A1D; margin: 2px -1px -5px;"></span></sc-if></a>
+        <a href="#emergency" onClick="{{ goEmergency }}" style="color: #171310; text-decoration: none; padding-bottom: 3px;">I feel off<sc-if value="{{ isEmergency }}" hint-placeholder-val="{{ false }}"><span style="display: block; height: 2px; background: #B02A1D; margin: 2px -1px -5px;"></span></sc-if></a>
+        <a href="#about" onClick="{{ goAbout }}" style="color: #171310; text-decoration: none; padding-bottom: 3px;">About<sc-if value="{{ isAbout }}" hint-placeholder-val="{{ false }}"><span style="display: block; height: 2px; background: #B02A1D; margin: 2px -1px -5px;"></span></sc-if></a>
+        <button type="button" onClick="{{ goSubmit }}" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; background: #B02A1D; color: #FFF9F2; border: none; padding: 11px 16px; cursor: pointer;" style-hover="background: #7A1C13">Report a reaction</button>
+      </nav>
+    </div>
+  </header>
+
+  <button type="button" onClick="{{ goEmergency }}" aria-label="Emergency: took something and feel off — danger signs and who to call" style="display: block; width: 100%; border: none; cursor: pointer; text-align: left; background: #B02A1D; color: #FFF6EE; padding: 0;" style-hover="background: #7A1C13">
+    <span style="display: block; height: 6px; background-image: repeating-linear-gradient(135deg, #171310 0 7px, #F0C24A 7px 14px);"></span>
+    <span style="max-width: 1240px; margin: 0 auto; padding: 13px 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="flex: none;">
+        <circle cx="12" cy="12" r="10.5" fill="none" stroke="#FFF6EE" stroke-width="2"></circle>
+        <rect x="11" y="5.8" width="2" height="8" fill="#FFF6EE"></rect>
+        <rect x="11" y="16" width="2" height="2.2" fill="#FFF6EE"></rect>
+      </svg>
+      <strong style="font-size: 17px; font-weight: 600;">Took something and feel off?</strong>
+      <span style="font-size: 15px; color: #FBDDD4;">Danger signs, 911 vs Poison Control, what to say — no login, one tap.</span>
+      <span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; border-bottom: 1px solid #FFF6EE;">Open now →</span>
+    </span>
+  </button>
+
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+  <main>
+    <section style="max-width: 1240px; margin: 0 auto; padding: 46px 24px 0;">
+      <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: #B02A1D; margin: 0 0 16px; display: flex; align-items: center; gap: 10px;">
+        <span style="width: 26px; height: 2px; background: #B02A1D;"></span>Start here
+      </p>
+      <h1 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: clamp(36px, 5vw, 60px); line-height: 1.04; letter-spacing: -.02em; margin: 0 0 16px; max-width: 20ch; text-wrap: balance;">Look up what you took. See what it did to other people.</h1>
+      <p style="font-size: 18.5px; line-height: 1.6; color: #4A4340; max-width: 58ch; margin: 0 0 18px; text-wrap: pretty;">Products sold at gas stations and smoke shops under names like Za Za and Galaxy Gas. Real reactions, reported by the people who had them.</p>
+      <p style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #6B635C; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 18px;">
+        <span>{{ totalReports }} reports on file</span><span>·</span><span>{{ erPct }}% ended in an ER</span><span>·</span><span>{{ last30 }} added in the last 30 days</span>
+      </p>
+    </section>
+
+    <section style="max-width: 1240px; margin: 0 auto; padding: 34px 24px 4px;">
+      <h2 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: clamp(24px, 3vw, 32px); line-height: 1.1; margin: 0 0 4px;">Tap what you took</h2>
+      <p style="font-size: 15.5px; color: #4A4340; margin: 0 0 20px;">Names as they appear on the package. Each one opens every report filed about it.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+        <sc-for list="{{ brandTiles }}" as="t" hint-placeholder-count="6">
+          <button type="button" onClick="{{ t.open }}" style="text-align: left; background: #FFFDF8; border: 1px solid #D8D2C6; border-top: 4px solid #171310; cursor: pointer; padding: 18px 18px 16px; display: grid; gap: 6px; color: #171310;" style-hover="border-color: #B02A1D; background: #F0EBE1">
+            <span style="font-family: 'Newsreader', serif; font-size: 24px; line-height: 1.1;">{{ t.name }}</span>
+            <span style="font-size: 14px; color: #4A4340;">contains {{ t.sub }}</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: #B02A1D; margin-top: 4px;">{{ t.count }} reports →</span>
+          </button>
+        </sc-for>
+        <button type="button" onClick="{{ goReports }}" style="text-align: left; background: none; border: 1px dashed #B9B1A3; cursor: pointer; padding: 18px; display: grid; gap: 6px; align-content: center; color: #171310;" style-hover="border-color: #171310; background: #F0EBE1">
+          <span style="font-family: 'Newsreader', serif; font-size: 22px; line-height: 1.15;">Something else</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: #4A4340;">Search all {{ totalReports }} reports →</span>
+        </button>
+      </div>
+      <form onSubmit="{{ onSearchSubmit }}" role="search" style="margin-top: 18px; border: 1px solid #171310; background: #FFFDF8; display: flex; align-items: center; gap: 10px; padding: 8px 12px; max-width: 520px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="flex: none;">
+          <circle cx="10.5" cy="10.5" r="6.8" fill="none" stroke="#171310" stroke-width="2"></circle>
+          <line x1="15.4" y1="15.4" x2="20.5" y2="20.5" stroke="#171310" stroke-width="2"></line>
+        </svg>
+        <label for="smw-search" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Search by product or street name</label>
+        <input id="smw-search" type="search" value="{{ query }}" onChange="{{ onQuery }}" placeholder="Or type a name — “Tianna”, “whippets”…" style="flex: 1; border: none; outline: none; background: transparent; font-size: 15.5px; min-width: 0;">
+        <button type="submit" style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; background: #171310; color: #F7F4EE; border: none; padding: 9px 13px; cursor: pointer;" style-hover="background: #B02A1D">Search</button>
+      </form>
+      <p style="font-size: 14px; color: #4A4340; margin: 14px 0 0; max-width: 62ch; line-height: 1.55; border-left: 3px solid #B02A1D; padding-left: 14px;">Names overlap on purpose. <strong>7-OH tablets and shots are sold as “kratom”</strong> but are a concentrated extract many times stronger than kratom leaf — reports about them are filed here, not under kratom tea.</p>
+    </section>
+
+    <section style="background: #171310; color: #EFE9DE; padding: 60px 0;">
+      <div style="max-width: 1240px; margin: 0 auto; padding: 0 24px; display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start;">
+        <div style="flex: 3 1 400px; min-width: 0;">
+          <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: #C98A16; margin: 0 0 8px;">[01] Most-reported products</p>
+          <h2 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: clamp(28px, 3.4vw, 40px); line-height: 1.1; margin: 0 0 6px;">What is sending people to the ER right now</h2>
+          <p style="font-size: 15px; color: #A9A196; margin: 0 0 30px; max-width: 62ch;">Products ranked by reports filed in the last 90 days. Tap any row to read them. This counts harm — it is not a popularity list.</p>
+
+          <ol style="list-style: none; margin: 0; padding: 0; display: grid; gap: 2px;">
+            <sc-for list="{{ brandBoard }}" as="row" hint-placeholder-count="7">
+              <li>
+                <button type="button" onClick="{{ row.open }}" style="width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid #2E2822; cursor: pointer; color: #EFE9DE; padding: 13px 8px 13px 0; display: grid; grid-template-columns: 28px minmax(0, 170px) minmax(0, 1fr) 44px 54px; gap: 10px; align-items: center;" style-hover="background: #221D18">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E665C;">{{ row.rank }}</span>
+                  <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+                    <strong style="font-size: 16px; font-weight: 500;">{{ row.name }}</strong>
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8E8579; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ row.soldAs }}</span>
+                  </span>
+                  <span style="display: block; height: 14px; background: #262019;">
+                    <span style="display: block; height: 14px; background: #B02A1D; width: {{ row.pct }}%;"></span>
+                  </span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; text-align: right;">{{ row.count }}</span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; text-align: right; color: {{ row.deltaColor }};">{{ row.delta }}</span>
+                </button>
+              </li>
+            </sc-for>
+          </ol>
+        </div>
+
+        <div style="flex: 1 1 280px; min-width: 0; border: 1px solid #342D25; padding: 22px; background: #1D1813;">
+          <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #C98A16; margin: 0 0 14px;">Reports per month</p>
+          <div style="display: flex; align-items: flex-end; gap: 5px; height: 132px; border-bottom: 1px solid #453D33;">
+            <sc-for list="{{ timeline }}" as="m" hint-placeholder-count="12">
+              <span title="{{ m.label }}" style="flex: 1; background: #C98A16; min-width: 6px; height: {{ m.pct }}%;"></span>
+            </sc-for>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #8E8579; margin-top: 7px;">
+            <span>{{ timelineStart }}</span><span>{{ timelineEnd }}</span>
+          </div>
+          <p style="font-size: 13.5px; line-height: 1.5; color: #A9A196; margin: 18px 0 0; border-top: 1px solid #342D25; padding-top: 14px;">Volume tracks awareness as much as harm. Spikes usually follow a product hitting shelves in a region.</p>
+        </div>
+      </div>
+    </section>
+
+    <section style="max-width: 1240px; margin: 0 auto; padding: 56px 24px;">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; border-bottom: 2px solid #171310; padding-bottom: 12px; margin-bottom: 4px;">
+        <div>
+          <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: #B02A1D; margin: 0 0 6px;">[02] Latest reports</p>
+          <h2 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: clamp(26px, 3vw, 36px); line-height: 1.1; margin: 0;">What came in this week</h2>
+        </div>
+        <a href="#reports" onClick="{{ goReports }}" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap;">Browse all reports →</a>
+      </div>
+      <ul style="list-style: none; margin: 0 0 26px; padding: 0;">
+        <sc-for list="{{ feed }}" as="r" hint-placeholder-count="5">
+          <li>
+            <button type="button" onClick="{{ r.open }}" style="width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid #D8D2C6; cursor: pointer; padding: 16px 6px 16px 0; display: grid; grid-template-columns: 92px minmax(0, 1fr) 118px; gap: 18px; align-items: start; color: #171310;" style-hover="background: #F0EBE1">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #6B635C; padding-top: 3px;">{{ r.dateShort }}<br>{{ r.state }}</span>
+              <span style="display: flex; flex-direction: column; gap: 5px; min-width: 0;">
+                <strong style="font-size: 17px; font-weight: 600;">{{ r.brand }} <span style="font-weight: 400; font-size: 14.5px; color: #6B635C;">· contains {{ r.substance }}</span></strong>
+                <span style="font-size: 14.5px; color: #4A4340; line-height: 1.45;">{{ r.symptomLine }}</span>
+              </span>
+              <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; padding: 3px 7px; border: 1px solid {{ r.helpColor }}; color: {{ r.helpColor }}; text-align: right;">{{ r.helpLabel }}</span>
+              </span>
+            </button>
+          </li>
+        </sc-for>
+      </ul>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; border: 1px solid #D8D2C6; background: #FFFDF8; padding: 18px 20px;">
+        <p style="margin: 0; font-size: 16px; flex: 1 1 300px;"><strong>Had a reaction yourself?</strong> Anonymous, about four minutes, no account.</p>
+        <button type="button" onClick="{{ goSubmit }}" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; background: #B02A1D; color: #FFF9F2; border: none; padding: 13px 18px; cursor: pointer;" style-hover="background: #7A1C13">Report a reaction</button>
+        <a href="#about" onClick="{{ goAbout }}" style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;">How we check reports →</a>
+      </div>
+    </section>
+
+    <section style="max-width: 1240px; margin: 0 auto; padding: 60px 24px;">
+      <div style="border: 2px solid #171310; background: #FFFDF8; display: flex; flex-wrap: wrap;">
+        <div style="flex: 1 1 340px; min-width: 0; padding: 34px 36px;">
+          <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: #B02A1D; margin: 0 0 10px;">[03] Alerts</p>
+          <h2 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: clamp(26px, 3vw, 34px); line-height: 1.12; margin: 0 0 10px; max-width: 22ch;">Get told when reports spike near you.</h2>
+          <p style="font-size: 15.5px; color: #4A4340; margin: 0; max-width: 50ch; line-height: 1.55;">One email when a substance sees an unusual jump in reports, or when your state restricts or recalls a product. Nothing else — no newsletter, no fundraising.</p>
+        </div>
+        <div style="flex: 1 1 320px; min-width: 0; border-left: 1px solid #D8D2C6; padding: 34px 36px; background: #F7F4EE;">
+          <sc-if value="{{ alertsDone }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+              <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="flex: none; margin-top: 2px;">
+                <circle cx="12" cy="12" r="10.5" fill="none" stroke="#2F6B4F" stroke-width="2"></circle>
+                <polyline points="7,12.5 10.5,16 17,8.5" fill="none" stroke="#2F6B4F" stroke-width="2"></polyline>
+              </svg>
+              <p style="margin: 0; font-size: 15.5px; line-height: 1.5;">You're on the list. We'll only write when something changes in <strong>{{ alertState }}</strong>. Unsubscribe is in every email.</p>
+            </div>
+          </sc-if>
+          <sc-if value="{{ alertsOpen }}" hint-placeholder-val="{{ true }}">
+          <form onSubmit="{{ onAlertSubmit }}" style="display: grid; gap: 14px;">
+            <div style="display: grid; gap: 6px;">
+              <label for="smw-alert-email" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #4A4340;">Email</label>
+              <input id="smw-alert-email" type="email" value="{{ alertEmail }}" onChange="{{ onAlertEmail }}" placeholder="you@example.com" style="border: 1px solid #171310; background: #FFFDF8; padding: 11px 12px; font-size: 15.5px;">
+            </div>
+            <div style="display: grid; gap: 6px;">
+              <label for="smw-alert-state" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #4A4340;">State</label>
+              <select id="smw-alert-state" value="{{ alertState }}" onChange="{{ onAlertState }}" style="border: 1px solid #171310; background: #FFFDF8; padding: 11px 12px; font-size: 15.5px;">
+                <sc-for list="{{ states }}" as="st" hint-placeholder-count="4">
+                  <option value="{{ st }}">{{ st }}</option>
+                </sc-for>
+              </select>
+            </div>
+            <sc-if value="{{ alertError }}" hint-placeholder-val="{{ false }}">
+              <p role="alert" style="margin: 0; font-size: 14px; color: #B02A1D; display: flex; gap: 8px; align-items: center;">
+                <span style="width: 14px; height: 14px; background: #B02A1D; flex: none;"></span>{{ alertError }}
+              </p>
+            </sc-if>
+            <button type="submit" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; background: #171310; color: #F7F4EE; border: none; padding: 13px; cursor: pointer;" style-hover="background: #B02A1D">Sign up for alerts</button>
+          </form>
+          </sc-if>
+        </div>
+      </div>
+    </section>
+  </main>
+  </sc-if>
+
+  <sc-if value="{{ isReports }}" hint-placeholder-val="{{ false }}">
+  <main style="max-width: 1240px; margin: 0 auto; padding: 44px 24px 72px;">
+    <sc-if value="{{ hasDetail }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <button type="button" onClick="{{ closeDetail }}" style="background: none; border: none; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #24466E; padding: 0 0 22px;">← Back to all reports</button>
+        <article style="display: flex; flex-wrap: wrap; gap: 44px; align-items: flex-start;">
+          <div style="flex: 3 1 400px; min-width: 0;">
+            <div style="height: 6px; background-image: repeating-linear-gradient(135deg, #171310 0 7px, #F0C24A 7px 14px); margin-bottom: 18px;"></div>
+            <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; margin: 0 0 10px;">Report {{ detail.id }} · Incident {{ detail.dateLong }} · Filed {{ detail.filedLong }} · {{ detail.state }}</p>
+            <h1 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: clamp(30px, 4vw, 46px); line-height: 1.08; margin: 0 0 10px;">{{ detail.brand }}</h1>
+            <p style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase; color: #B02A1D; margin: 0 0 14px;">Contains {{ detail.substance }}</p>
+            <p style="font-size: 18px; color: #4A4340; margin: 0 0 30px; max-width: 60ch; line-height: 1.6;">{{ detail.symptomLine }}</p>
+
+            <dl style="margin: 0 0 32px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px; background: #D8D2C6; border: 1px solid #D8D2C6;">
+              <div style="background: #FFFDF8; padding: 14px 16px;">
+                <dt style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin-bottom: 6px;">Reported by</dt>
+                <dd style="margin: 0; font-size: 15.5px;">{{ detail.reporter }}</dd>
+              </div>
+              <div style="background: #FFFDF8; padding: 14px 16px;">
+                <dt style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin-bottom: 6px;">Amount reported</dt>
+                <dd style="margin: 0; font-size: 15.5px;">{{ detail.amount }}</dd>
+              </div>
+              <div style="background: #FFFDF8; padding: 14px 16px;">
+                <dt style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin-bottom: 6px;">Taken with</dt>
+                <dd style="margin: 0; font-size: 15.5px;">{{ detail.takenWith }}</dd>
+              </div>
+              <div style="background: #FFFDF8; padding: 14px 16px;">
+                <dt style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin-bottom: 6px;">Duration</dt>
+                <dd style="margin: 0; font-size: 15.5px;">{{ detail.duration }}</dd>
+              </div>
+              <div style="background: #FFFDF8; padding: 14px 16px;">
+                <dt style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin-bottom: 6px;">What happened next</dt>
+                <dd style="margin: 0; font-size: 15.5px; color: {{ detail.helpColor }};">{{ detail.helpLabel }}</dd>
+              </div>
+            </dl>
+
+            <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; margin: 0 0 10px;">Symptoms reported</h2>
+            <ul style="list-style: none; margin: 0 0 30px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px;">
+              <sc-for list="{{ detail.symptoms }}" as="sym" hint-placeholder-count="3">
+                <li style="font-size: 14px; border: 1px solid #171310; padding: 5px 10px;">{{ sym }}</li>
+              </sc-for>
+            </ul>
+
+            <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; margin: 0 0 10px;">In their words</h2>
+            <blockquote style="margin: 0 0 30px; border-left: 3px solid #B02A1D; padding: 4px 0 4px 20px; font-family: 'Newsreader', serif; font-size: 21px; line-height: 1.5; color: #26201B;">{{ detail.note }}</blockquote>
+
+            <p style="font-size: 13.5px; color: #4A4340; background: #F0EBE1; border: 1px solid #D8D2C6; padding: 14px 16px; margin: 0; line-height: 1.55;">This is one person's unverified account, published as submitted apart from redaction of identifying details. It is not a diagnosis, a lab result, or proof of what the product contained.</p>
+          </div>
+
+          <aside style="flex: 1 1 260px; min-width: 0; display: grid; gap: 24px; position: sticky; top: 96px;">
+            <div style="border: 1px solid #D8D2C6; background: #FFFDF8; padding: 20px;">
+              <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin: 0 0 12px;">{{ detail.family }} in the registry</p>
+              <p style="font-family: 'Newsreader', serif; font-size: 40px; line-height: 1; margin: 0 0 4px;">{{ detail.subCount }}</p>
+              <p style="font-size: 14px; color: #4A4340; margin: 0 0 16px;">total reports · {{ detail.subEr }} involved an ER visit</p>
+              <button type="button" onClick="{{ detail.openSubstance }}" style="width: 100%; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; background: #171310; color: #F7F4EE; border: none; padding: 11px; cursor: pointer;" style-hover="background: #24466E">Product guide</button>
+            </div>
+            <div style="border: 2px solid #B02A1D; padding: 20px;">
+              <p style="font-family: 'Newsreader', serif; font-size: 20px; margin: 0 0 8px;">Happening to you right now?</p>
+              <p style="font-size: 14px; color: #4A4340; margin: 0 0 14px; line-height: 1.5;">Poison Control is free, 24/7, confidential, and not law enforcement.</p>
+              <a href="tel:18002221222" style="font-family: 'IBM Plex Mono', monospace; font-size: 17px; color: #B02A1D; text-decoration: none; border-bottom: 2px solid #B02A1D;">1-800-222-1222</a>
+            </div>
+          </aside>
+        </article>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showExplorer }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <div style="display: flex; flex-wrap: wrap; gap: 32px 48px; align-items: flex-end; border-bottom: 2px solid #171310; padding-bottom: 20px; margin-bottom: 26px;">
+        <div style="flex: 3 1 400px; min-width: 0;">
+          <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: #B02A1D; margin: 0 0 8px;">Report explorer</p>
+          <h1 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: clamp(32px, 4.4vw, 50px); line-height: 1.05; margin: 0 0 8px;">{{ totalReports }} adverse-reaction reports</h1>
+          <p style="font-size: 16px; color: #4A4340; margin: 0; max-width: 62ch;">Self-submitted, bot-checked, screened for high-risk language. Sort and filter the whole registry, or open any report in full.</p>
+        </div>
+        <div style="flex: 1 1 180px; display: grid; gap: 10px;">
+          <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin: 0;">Showing</p>
+          <p style="font-family: 'Newsreader', serif; font-size: 34px; line-height: 1; margin: 0;">{{ filteredCount }} <span style="font-size: 16px; font-family: 'IBM Plex Sans', sans-serif; color: #6B635C;">of {{ totalReports }}</span></p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 8px;">
+        <div style="display: grid; gap: 6px; flex: 1 1 240px;">
+          <label for="smw-rq" style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #4A4340;">Search substance, brand, symptom</label>
+          <input id="smw-rq" type="search" value="{{ rq }}" onChange="{{ onRq }}" placeholder="e.g. Za Za, blackout, Ohio" style="border: 1px solid #171310; background: #FFFDF8; padding: 10px 12px; font-size: 15px;">
+        </div>
+        <div style="display: grid; gap: 6px;">
+          <label for="smw-fsub" style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #4A4340;">Ingredient</label>
+          <select id="smw-fsub" value="{{ fSub }}" onChange="{{ onFSub }}" style="border: 1px solid #171310; background: #FFFDF8; padding: 10px 12px; font-size: 15px;">
+            <sc-for list="{{ substanceOptions }}" as="o" hint-placeholder-count="4">
+              <option value="{{ o }}">{{ o }}</option>
+            </sc-for>
+          </select>
+        </div>
+        <div style="display: grid; gap: 6px;">
+          <label for="smw-fhelp" style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #4A4340;">What happened next</label>
+          <select id="smw-fhelp" value="{{ fHelp }}" onChange="{{ onFHelp }}" style="border: 1px solid #171310; background: #FFFDF8; padding: 10px 12px; font-size: 15px;">
+            <sc-for list="{{ helpOptions }}" as="o" hint-placeholder-count="4">
+              <option value="{{ o }}">{{ o }}</option>
+            </sc-for>
+          </select>
+        </div>
+        <button type="button" onClick="{{ resetFilters }}" style="background: none; border: 1px solid #D8D2C6; color: #4A4340; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; padding: 11px 14px; cursor: pointer;" style-hover="border-color: #171310; color: #171310">Reset</button>
+      </div>
+
+      <sc-if value="{{ hasFamFilter }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C;">Showing one product</span>
+          <button type="button" onClick="{{ clearFam }}" style="display: flex; align-items: center; gap: 10px; background: #171310; color: #F7F4EE; border: none; padding: 7px 12px; cursor: pointer; font-size: 14px;" style-hover="background: #B02A1D">
+            {{ famFilter }}
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">✕</span>
+          </button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasSnapshot }}" hint-placeholder-val="{{ false }}">
+        <div style="border: 1px solid #171310; background: #FFFDF8; padding: 20px 22px; margin: 18px 0 4px; display: flex; flex-wrap: wrap; gap: 28px 34px; align-items: center;">
+          <div>
+            <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #B02A1D; margin: 0 0 8px;">Aggregate snapshot</p>
+            <p style="font-family: 'Newsreader', serif; font-size: 26px; line-height: 1.15; margin: 0 0 6px;">{{ snapshot.name }}</p>
+            <p style="font-size: 14.5px; color: #4A4340; margin: 0;">{{ snapshot.count }} reports · {{ snapshot.erPct }}% involved an ER visit · most-named product: {{ snapshot.topBrand }}</p>
+          </div>
+          <ul style="list-style: none; margin: 0; padding: 0; display: grid; gap: 8px;">
+            <sc-for list="{{ snapshot.symptoms }}" as="s" hint-placeholder-count="4">
+              <li style="display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 32px; gap: 12px; align-items: center; font-size: 14px;">
+                <span>{{ s.name }}</span>
+                <span style="display: block; height: 9px; background: #E1DACE;"><span style="display: block; height: 9px; background: #B02A1D; width: {{ s.pct }}%;"></span></span>
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-align: right; color: #4A4340;">{{ s.count }}</span>
+              </li>
+            </sc-for>
+          </ul>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasRows }}" hint-placeholder-val="{{ true }}">
+      <div style="overflow-x: auto; margin-top: 18px;">
+        <table style="width: 100%; border-collapse: collapse; min-width: 860px;">
+          <thead>
+            <tr style="border-bottom: 2px solid #171310;">
+              <th scope="col" style="text-align: left; padding: 0 10px 9px 0;"><button type="button" onClick="{{ sortDate }}" style="background: none; border: none; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase; color: #171310; padding: 0;">Date {{ sortMark.date }}</button></th>
+              <th scope="col" style="text-align: left; padding: 0 10px 9px 0;"><button type="button" onClick="{{ sortSub }}" style="background: none; border: none; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase; color: #171310; padding: 0;">Product {{ sortMark.brand }}</button></th>
+              <th scope="col" style="text-align: left; padding: 0 10px 9px 0; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase; font-weight: 500;">Ingredient</th>
+              <th scope="col" style="text-align: left; padding: 0 10px 9px 0; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase; font-weight: 500;">Symptoms</th>
+              <th scope="col" style="text-align: left; padding: 0 0 9px 0;"><button type="button" onClick="{{ sortHelp }}" style="background: none; border: none; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase; color: #171310; padding: 0;">What happened next {{ sortMark.help }}</button></th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+              <tr onClick="{{ r.open }}" tabIndex="0" onKeyDown="{{ r.onKey }}" style="border-bottom: 1px solid #E1DACE; cursor: pointer; background: {{ r.zebra }};" style-hover="background: #F0EBE1">
+                <td style="padding: 12px 10px 12px 0; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: #4A4340; white-space: nowrap;">{{ r.dateShort }}</td>
+                <td style="padding: 12px 10px 12px 0; font-size: 15px; font-weight: 600;">{{ r.brand }}</td>
+                <td style="padding: 12px 10px 12px 0; font-size: 14.5px; color: #4A4340;">{{ r.substance }}</td>
+                <td style="padding: 12px 10px 12px 0; font-size: 14.5px; color: #4A4340; max-width: 300px;">{{ r.symptomLine }}</td>
+                <td style="padding: 12px 0;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; padding: 3px 7px; border: 1px solid {{ r.helpColor }}; color: {{ r.helpColor }}; white-space: nowrap;">{{ r.helpLabel }}</span></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ noRows }}" hint-placeholder-val="{{ false }}">
+        <div style="border: 1px dashed #B9B1A3; padding: 54px 32px; text-align: center; margin-top: 22px; background: #FFFDF8;">
+          <div style="width: 46px; height: 46px; margin: 0 auto 16px; border: 2px solid #B9B1A3; display: grid; place-items: center;">
+            <span style="width: 18px; height: 2px; background: #B9B1A3;"></span>
+          </div>
+          <p style="font-family: 'Newsreader', serif; font-size: 24px; margin: 0 0 8px;">No reports match that yet</p>
+          <p style="font-size: 15px; color: #4A4340; margin: 0 0 18px; max-width: 46ch; margin-inline: auto;">An empty result is information too — it may mean nobody has reported this combination, not that it is safe.</p>
+          <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <button type="button" onClick="{{ resetFilters }}" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; background: #171310; color: #F7F4EE; border: none; padding: 11px 16px; cursor: pointer;">Clear filters</button>
+            <button type="button" onClick="{{ goSubmit }}" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; background: none; border: 1px solid #171310; color: #171310; padding: 11px 16px; cursor: pointer;">Be the first to report it</button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+    </sc-if>
+  </main>
+  </sc-if>
+
+  <sc-if value="{{ isSubmit }}" hint-placeholder-val="{{ false }}">
+  <main style="max-width: 1240px; margin: 0 auto; padding: 44px 24px 72px;">
+    <sc-if value="{{ submitDone }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width: 640px; border: 2px solid #2F6B4F; background: #FFFDF8; padding: 36px;">
+        <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #2F6B4F; margin: 0 0 12px;">Received · {{ newId }}</p>
+        <h1 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: 36px; line-height: 1.1; margin: 0 0 12px;">Your report is in the registry.</h1>
+        <p style="font-size: 16.5px; color: #4A4340; line-height: 1.6; margin: 0 0 22px;">It will appear in the feed within a few minutes. We kept no email, no IP address, and no account — which also means we can't retrieve or edit it later. Write down the ID if you want to reference it.</p>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <button type="button" onClick="{{ goReports }}" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; background: #171310; color: #F7F4EE; border: none; padding: 12px 16px; cursor: pointer;">See all reports</button>
+          <button type="button" onClick="{{ goEmergency }}" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; background: none; border: 1px solid #B02A1D; color: #B02A1D; padding: 12px 16px; cursor: pointer;">If you still feel off</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ submitHeld }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width: 640px; border: 2px solid #B02A1D; background: #FFFDF8; padding: 0;">
+        <div style="height: 6px; background-image: repeating-linear-gradient(135deg, #171310 0 7px, #F0C24A 7px 14px);"></div>
+        <div style="padding: 32px 36px 36px;">
+          <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #B02A1D; margin: 0 0 12px;">Held for safety review</p>
+          <h1 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: 34px; line-height: 1.1; margin: 0 0 12px;">We're holding this one for a person to read.</h1>
+          <p style="font-size: 16.5px; color: #4A4340; line-height: 1.6; margin: 0 0 20px;">Your report contains language our screen flags for risk of harm. It isn't published yet and it hasn't been deleted — a reviewer looks at held reports every day.</p>
+          <div style="border-left: 3px solid #B02A1D; padding-left: 18px; margin-bottom: 22px;">
+            <p style="margin: 0 0 6px; font-size: 16px;"><strong>If you're thinking about hurting yourself, please talk to someone now.</strong></p>
+            <p style="margin: 0; font-size: 16px;">Call or text <a href="tel:988" style="font-family: 'IBM Plex Mono', monospace;">988</a> — the Suicide &amp; Crisis Lifeline, 24/7, free.</p>
+          </div>
+          <button type="button" onClick="{{ backToForm }}" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; background: none; border: 1px solid #171310; color: #171310; padding: 12px 16px; cursor: pointer;">Back to the form</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ submitOpen }}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start;">
+      <form onSubmit="{{ onReportSubmit }}" style="flex: 3 1 400px; min-width: 0; max-width: 720px;">
+        <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: #B02A1D; margin: 0 0 8px;">Report a reaction</p>
+        <h1 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: clamp(32px, 4.4vw, 48px); line-height: 1.05; margin: 0 0 12px;">Tell us what happened to you.</h1>
+        <p style="font-size: 17px; color: #4A4340; line-height: 1.6; margin: 0 0 30px; max-width: 58ch;">Anonymous. No account, no email required. Skip anything you don't know — a partial report still counts. <strong>If you are in danger right now, <a href="#emergency" onClick="{{ goEmergency }}">get help first</a>.</strong></p>
+
+        <fieldset style="border: none; border-top: 2px solid #171310; margin: 0 0 30px; padding: 18px 0 0;">
+          <legend style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; padding: 0 10px 0 0;">01 · Who is reporting</legend>
+          <p style="font-size: 14px; color: #4A4340; margin: 0 0 12px;">Still anonymous either way — this only tells us how to read the account.</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <sc-for list="{{ reporterChoices }}" as="c" hint-placeholder-count="4">
+              <button type="button" onClick="{{ c.pick }}" aria-pressed="{{ c.on }}" style="font-size: 14.5px; border: 1px solid #171310; background: {{ c.bg }}; color: {{ c.fg }}; padding: 9px 14px; cursor: pointer;" style-hover="border-color: #B02A1D">{{ c.name }}</button>
+            </sc-for>
+          </div>
+        </fieldset>
+
+        <fieldset style="border: none; border-top: 2px solid #171310; margin: 0 0 30px; padding: 18px 0 0;">
+          <legend style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; padding: 0 10px 0 0;">02 · The product</legend>
+          <div style="border: 1px solid #171310; background: #FFFDF8; padding: 16px 18px 18px; margin-bottom: 18px;">
+            <p style="margin: 0 0 12px; font-size: 14px; color: #4A4340;">Pick the name on the package. Each one is listed with the substance it contains — that pairing is what we group reports by.</p>
+            <div style="display: grid; gap: 6px; max-width: 460px;">
+              <label for="f-brand" style="font-size: 14.5px; font-weight: 500;">Brand or street name <span style="color: #B02A1D;">*</span></label>
+              <select id="f-brand" value="{{ form.brandKey }}" onChange="{{ onFormBrandKey }}" style="border: 1px solid #171310; background: #F7F4EE; padding: 11px 12px; font-size: 15.5px;">
+                <sc-for list="{{ brandOptions }}" as="b" hint-placeholder-count="10">
+                  <option value="{{ b.key }}">{{ b.label }}</option>
+                </sc-for>
+              </select>
+              <sc-if value="{{ brandIsOther }}" hint-placeholder-val="{{ false }}">
+                <div style="display: grid; gap: 6px; margin-top: 8px;">
+                  <label for="f-brand-other" style="font-size: 14.5px; font-weight: 500;">Name on the package <span style="color: #B02A1D;">*</span></label>
+                  <input id="f-brand-other" type="text" value="{{ form.brand }}" onChange="{{ onFormBrand }}" placeholder="Type it exactly as printed" style="border: 1px solid #171310; background: #F7F4EE; padding: 11px 12px; font-size: 15.5px;">
+                  <label for="f-sub" style="font-size: 14.5px; font-weight: 500; margin-top: 8px;">Substance, if you know it</label>
+                  <select id="f-sub" value="{{ form.substance }}" onChange="{{ onFormSubstance }}" style="border: 1px solid #171310; background: #F7F4EE; padding: 11px 12px; font-size: 15.5px;">
+                    <sc-for list="{{ substanceFormOptions }}" as="o" hint-placeholder-count="5">
+                      <option value="{{ o }}">{{ o }}</option>
+                    </sc-for>
+                  </select>
+                </div>
+              </sc-if>
+              <sc-if value="{{ brandPicked }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 4px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: #B02A1D;">Filed under {{ form.substance }} · {{ brandReportCount }} reports already on file</p>
+              </sc-if>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; align-items: start;">
+            <div style="display: grid; gap: 6px;">
+              <label for="f-amt" style="font-size: 14.5px; font-weight: 500;">How much, roughly</label>
+              <input id="f-amt" type="text" value="{{ form.amount }}" onChange="{{ onFormAmount }}" placeholder="“most of a bottle”, “two tablets”" style="border: 1px solid #171310; background: #FFFDF8; padding: 11px 12px; font-size: 15.5px;">
+              <span style="font-size: 12.5px; color: #6B635C;">Plain words are fine. We never publish this as guidance.</span>
+            </div>
+            <div style="display: grid; gap: 6px;">
+              <label for="f-with" style="font-size: 14.5px; font-weight: 500;">Taken with anything else</label>
+              <input id="f-with" type="text" value="{{ form.takenWith }}" onChange="{{ onFormWith }}" placeholder="Alcohol, prescriptions, nothing" style="border: 1px solid #171310; background: #FFFDF8; padding: 11px 12px; font-size: 15.5px;">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset style="border: none; border-top: 2px solid #171310; margin: 0 0 30px; padding: 18px 0 0;">
+          <legend style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; padding: 0 10px 0 0;">03 · What happened <span style="color: #B02A1D;">*</span></legend>
+          <div style="display: grid; gap: 6px; max-width: 260px; margin-bottom: 20px;">
+            <label for="f-date" style="font-size: 14.5px; font-weight: 500;">Date of the incident <span style="color: #B02A1D;">*</span></label>
+            <input id="f-date" type="date" value="{{ form.incidentDate }}" onChange="{{ onFormDate }}" max="{{ todayIso }}" style="border: 1px solid #171310; background: #FFFDF8; padding: 11px 12px; font-size: 15.5px;">
+          </div>
+          <p style="font-size: 14px; color: #4A4340; margin: 0 0 14px;">Select every symptom there was. Pick at least one.</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <sc-for list="{{ symptomChoices }}" as="c" hint-placeholder-count="12">
+              <button type="button" onClick="{{ c.toggle }}" aria-pressed="{{ c.on }}" style="font-size: 14px; border: 1px solid #171310; background: {{ c.bg }}; color: {{ c.fg }}; padding: 7px 12px; cursor: pointer;" style-hover="border-color: #B02A1D">{{ c.name }}</button>
+            </sc-for>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; align-items: start; margin-top: 20px;">
+            <div style="display: grid; gap: 6px;">
+              <label for="f-dur" style="font-size: 14.5px; font-weight: 500;">How long it lasted</label>
+              <select id="f-dur" value="{{ form.duration }}" onChange="{{ onFormDuration }}" style="border: 1px solid #171310; background: #FFFDF8; padding: 11px 12px; font-size: 15.5px;">
+                <sc-for list="{{ durationOptions }}" as="o" hint-placeholder-count="4">
+                  <option value="{{ o }}">{{ o }}</option>
+                </sc-for>
+              </select>
+            </div>
+            <div style="display: grid; gap: 6px;">
+              <label for="f-state" style="font-size: 14.5px; font-weight: 500;">State</label>
+              <select id="f-state" value="{{ form.state }}" onChange="{{ onFormState }}" style="border: 1px solid #171310; background: #FFFDF8; padding: 11px 12px; font-size: 15.5px;">
+                <sc-for list="{{ states }}" as="st" hint-placeholder-count="4">
+                  <option value="{{ st }}">{{ st }}</option>
+                </sc-for>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset style="border: none; border-top: 2px solid #171310; margin: 0 0 30px; padding: 18px 0 0;">
+          <legend style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; padding: 0 10px 0 0;">04 · What happened next</legend>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; align-items: start;">
+            <div style="display: grid; gap: 6px;">
+              <label for="f-help" style="font-size: 14.5px; font-weight: 500;">Was medical help sought?</label>
+              <select id="f-help" value="{{ form.help }}" onChange="{{ onFormHelp }}" style="border: 1px solid #171310; background: #FFFDF8; padding: 11px 12px; font-size: 15.5px;">
+                <sc-for list="{{ helpFormOptions }}" as="o" hint-placeholder-count="4">
+                  <option value="{{ o }}">{{ o }}</option>
+                </sc-for>
+              </select>
+            </div>
+          </div>
+          <div style="display: grid; gap: 6px; margin-top: 18px;">
+            <label for="f-note" style="font-size: 14.5px; font-weight: 500;">Anything else, in your own words</label>
+            <textarea id="f-note" rows="5" value="{{ form.note }}" onChange="{{ onFormNote }}" placeholder="What it felt like, how it started, what helped." style="border: 1px solid #171310; background: #FFFDF8; padding: 11px 12px; font-size: 15.5px; resize: vertical; font-family: inherit;"></textarea>
+            <span style="font-size: 12.5px; color: #6B635C;">Please leave out names, addresses, and anything that identifies you or someone else.</span>
+          </div>
+        </fieldset>
+
+        <div style="border: 1px solid #D8D2C6; background: #FFFDF8; padding: 16px 18px; display: flex; gap: 14px; align-items: center; margin-bottom: 18px;">
+          <button type="button" onClick="{{ toggleBot }}" aria-pressed="{{ form.bot }}" aria-label="I am not a robot" style="width: 26px; height: 26px; flex: none; border: 2px solid #171310; background: {{ botBg }}; cursor: pointer; display: grid; place-items: center; padding: 0;">
+            <sc-if value="{{ form.bot }}" hint-placeholder-val="{{ false }}">
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><polyline points="4,13 9.5,18.5 20,6" fill="none" stroke="#FFF9F2" stroke-width="3"></polyline></svg>
+            </sc-if>
+          </button>
+          <div>
+            <p style="margin: 0; font-size: 15px; font-weight: 500;">I'm not a robot</p>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #6B635C;">Bot check instead of sign-in. We don't log your IP.</p>
+          </div>
+        </div>
+
+        <sc-if value="{{ hasFormError }}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="border-left: 3px solid #B02A1D; background: #FBEDEA; padding: 12px 16px; margin-bottom: 18px;">
+            <p style="margin: 0; font-size: 14.5px; color: #7A1C13;">{{ formError }}</p>
+          </div>
+        </sc-if>
+
+        <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap;">
+          <button type="submit" disabled="{{ submitting }}" style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase; background: #B02A1D; color: #FFF9F2; border: none; padding: 15px 26px; cursor: pointer;" style-hover="background: #7A1C13">{{ submitLabel }}</button>
+          <p style="margin: 0; font-size: 13.5px; color: #6B635C; max-width: 40ch;">Submitting publishes an anonymized version of this report to the public registry.</p>
+        </div>
+      </form>
+
+      <aside style="flex: 1 1 260px; min-width: 0; display: grid; gap: 22px; position: sticky; top: 96px;">
+        <div style="border: 2px solid #B02A1D; padding: 20px;">
+          <p style="font-family: 'Newsreader', serif; font-size: 21px; margin: 0 0 8px;">Don't fill this out mid-emergency.</p>
+          <p style="font-size: 14.5px; color: #4A4340; margin: 0 0 14px; line-height: 1.5;">Call 911 for trouble breathing, seizure, or someone you can't wake. Poison Control for everything else.</p>
+          <a href="tel:18002221222" style="font-family: 'IBM Plex Mono', monospace; font-size: 17px; color: #B02A1D; text-decoration: none; border-bottom: 2px solid #B02A1D;">1-800-222-1222</a>
+        </div>
+        <div style="border-left: 3px solid #171310; padding-left: 16px;">
+          <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin: 0 0 8px;">What happens next</p>
+          <ol style="margin: 0; padding-left: 18px; font-size: 14.5px; color: #4A4340; line-height: 1.55; display: grid; gap: 8px;">
+            <li>Bot check clears the submission.</li>
+            <li>An automated screen looks for self-harm and dosing-to-harm language.</li>
+            <li>Clean reports publish to the feed; flagged ones wait for a human reviewer.</li>
+            <li>Your report joins the counts on the substance page.</li>
+          </ol>
+        </div>
+      </aside>
+    </div>
+    </sc-if>
+  </main>
+  </sc-if>
+
+  <sc-if value="{{ isSubstance }}" hint-placeholder-val="{{ false }}">
+  <main style="max-width: 1240px; margin: 0 auto; padding: 44px 24px 72px;">
+    <div>
+      <div style="border-bottom: 2px solid #171310; padding-bottom: 24px; margin-bottom: 30px; display: flex; flex-wrap: wrap; gap: 32px 48px; align-items: flex-end;">
+        <div style="flex: 3 1 400px; min-width: 0;">
+          <button type="button" onClick="{{ goGuide }}" style="background: none; border: none; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #24466E; padding: 0 0 16px;">← All products</button>
+          <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: #B02A1D; margin: 0 0 10px;">Product guide · Reviewed {{ g.reviewed }}</p>
+          <h1 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: clamp(36px, 5.4vw, 64px); line-height: 1.02; letter-spacing: -.02em; margin: 0 0 8px;">{{ g.title }}</h1>
+          <p style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #B02A1D; margin: 0 0 14px;">{{ g.contains }}</p>
+          <p style="font-size: 19px; color: #4A4340; line-height: 1.55; margin: 0 0 18px; max-width: 56ch; text-wrap: pretty;">{{ g.intro }}</p>
+          <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px;">
+            <sc-for list="{{ g.soldAs }}" as="n" hint-placeholder-count="5">
+              <li style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; border: 1px solid #171310; padding: 5px 10px; background: #FFFDF8;">{{ n }}</li>
+            </sc-for>
+          </ul>
+        </div>
+        <div style="border: 1px solid #D8D2C6; background: #FFFDF8;">
+          <div style="height: 6px; background-image: repeating-linear-gradient(135deg, #171310 0 7px, #F0C24A 7px 14px);"></div>
+          <div style="padding: 18px 20px;">
+            <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin: 0 0 12px;">In this registry</p>
+            <div style="display: flex; gap: 26px; flex-wrap: wrap;">
+              <div><p style="font-family: 'Newsreader', serif; font-size: 34px; line-height: 1; margin: 0;">{{ g.count }}</p><p style="font-size: 13px; color: #4A4340; margin: 4px 0 0;">reports</p></div>
+              <div><p style="font-family: 'Newsreader', serif; font-size: 34px; line-height: 1; margin: 0; color: #B02A1D;">{{ g.erPct }}%</p><p style="font-size: 13px; color: #4A4340; margin: 4px 0 0;">ER involved</p></div>
+              <div><p style="font-family: 'Newsreader', serif; font-size: 34px; line-height: 1; margin: 0;">{{ g.states }}</p><p style="font-size: 13px; color: #4A4340; margin: 4px 0 0;">states</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start;">
+        <nav aria-label="On this page" style="flex: 1 1 160px; min-width: 0; position: sticky; top: 96px; display: grid; gap: 9px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .04em;">
+          <p style="letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin: 0 0 4px; font-size: 10.5px;">On this page</p>
+          <a href="#s-what" style="color: #171310; text-decoration: none; border-bottom: 1px solid #D8D2C6; padding-bottom: 7px;">What it is</a>
+          <a href="#s-effects" style="color: #171310; text-decoration: none; border-bottom: 1px solid #D8D2C6; padding-bottom: 7px;">Real effects</a>
+          <a href="#s-risks" style="color: #171310; text-decoration: none; border-bottom: 1px solid #D8D2C6; padding-bottom: 7px;">Actual risks</a>
+          <a href="#s-inter" style="color: #171310; text-decoration: none; border-bottom: 1px solid #D8D2C6; padding-bottom: 7px;">Interactions</a>
+          <a href="#s-danger" style="color: #B02A1D; text-decoration: none; border-bottom: 1px solid #D8D2C6; padding-bottom: 7px;">Danger signs</a>
+          <a href="#s-dep" style="color: #171310; text-decoration: none; border-bottom: 1px solid #D8D2C6; padding-bottom: 7px;">Dependence</a>
+          <a href="#s-legal" style="color: #171310; text-decoration: none; border-bottom: 1px solid #D8D2C6; padding-bottom: 7px;">Legal status</a>
+          <a href="#s-reports" style="color: #171310; text-decoration: none; border-bottom: 1px solid #D8D2C6; padding-bottom: 7px;">Related reports</a>
+          <a href="#s-help" style="color: #171310; text-decoration: none;">Get help</a>
+        </nav>
+
+        <article style="flex: 999 1 360px; min-width: 0; font-size: 17px; line-height: 1.65; color: #26201B;">
+          <section id="s-what" style="margin-bottom: 38px;">
+            <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; margin: 0 0 12px; display: flex; align-items: center; gap: 10px;"><span style="width: 18px; height: 2px; background: #B02A1D;"></span>What it is</h2>
+            <sc-for list="{{ g.whatIs }}" as="p" hint-placeholder-count="2">
+              <p style="margin: 0 0 14px;">{{ p }}</p>
+            </sc-for>
+          </section>
+
+          <section id="s-effects" style="margin-bottom: 38px;">
+            <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; margin: 0 0 12px; display: flex; align-items: center; gap: 10px;"><span style="width: 18px; height: 2px; background: #B02A1D;"></span>What it actually does</h2>
+            <sc-for list="{{ g.effects }}" as="p" hint-placeholder-count="1">
+              <p style="margin: 0 0 14px;">{{ p }}</p>
+            </sc-for>
+            <p style="margin: 0; padding: 14px 16px; background: #F0EBE1; border-left: 3px solid #171310; font-size: 15.5px;">We deliberately do not publish doses, timings, or "how to use it safely" guidance. What people search for at 2am is whether what they feel is dangerous — that is what this page answers.</p>
+          </section>
+
+          <section id="s-risks" style="margin-bottom: 38px;">
+            <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; margin: 0 0 12px; display: flex; align-items: center; gap: 10px;"><span style="width: 18px; height: 2px; background: #B02A1D;"></span>Actual risks</h2>
+            <ul style="margin: 0; padding: 0; list-style: none; display: grid; gap: 1px; background: #D8D2C6; border: 1px solid #D8D2C6;">
+              <sc-for list="{{ g.risks }}" as="r" hint-placeholder-count="5">
+                <li style="background: #FFFDF8; padding: 14px 16px; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; font-size: 15.5px; line-height: 1.55;">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #B02A1D; padding-top: 2px;">{{ r.n }}</span>
+                  <span><strong>{{ r.title }}</strong> — {{ r.body }}</span>
+                </li>
+              </sc-for>
+            </ul>
+          </section>
+
+          <section id="s-inter" style="margin-bottom: 38px;">
+            <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; margin: 0 0 12px; display: flex; align-items: center; gap: 10px;"><span style="width: 18px; height: 2px; background: #B02A1D;"></span>Interaction warnings</h2>
+            <p style="margin: 0 0 14px;">Most reports in our registry that ended in an ER visit involved more than one substance.</p>
+            <ul style="margin: 0; padding: 0; list-style: none; display: grid; gap: 10px;">
+              <sc-for list="{{ g.interactions }}" as="i" hint-placeholder-count="4">
+                <li style="display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; border-bottom: 1px solid #E1DACE; padding-bottom: 10px; font-size: 15.5px;">
+                  <strong style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #B02A1D;">{{ i.with }}</strong>
+                  <span>{{ i.risk }}</span>
+                </li>
+              </sc-for>
+            </ul>
+          </section>
+
+          <section id="s-danger" style="margin-bottom: 38px; border: 2px solid #B02A1D;">
+            <div style="height: 6px; background-image: repeating-linear-gradient(135deg, #171310 0 7px, #F0C24A 7px 14px);"></div>
+            <div style="padding: 24px 26px;">
+              <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: #B02A1D; margin: 0 0 14px;">Overdose &amp; danger signs — call 911</h2>
+              <ul style="margin: 0 0 16px; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 22px;">
+                <sc-for list="{{ g.dangerSigns }}" as="d" hint-placeholder-count="6">
+                  <li style="display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 10px; font-size: 15.5px; line-height: 1.45;">
+                    <span style="width: 10px; height: 10px; background: #B02A1D; margin-top: 7px;"></span>{{ d }}
+                  </li>
+                </sc-for>
+              </ul>
+              <p style="margin: 0; font-size: 15.5px; background: #FBEDEA; padding: 12px 14px;">{{ g.antidote }}</p>
+            </div>
+          </section>
+
+          <section id="s-dep" style="margin-bottom: 38px;">
+            <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; margin: 0 0 12px; display: flex; align-items: center; gap: 10px;"><span style="width: 18px; height: 2px; background: #B02A1D;"></span>Dependence &amp; withdrawal</h2>
+            <sc-for list="{{ g.dependence }}" as="p" hint-placeholder-count="2">
+              <p style="margin: 0 0 14px;">{{ p }}</p>
+            </sc-for>
+          </section>
+
+          <section id="s-legal" style="margin-bottom: 38px;">
+            <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; margin: 0 0 12px; display: flex; align-items: center; gap: 10px;"><span style="width: 18px; height: 2px; background: #B02A1D;"></span>Legal status</h2>
+            <p style="margin: 0 0 16px;">{{ g.legalIntro }}</p>
+            <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+              <thead><tr style="border-bottom: 2px solid #171310;">
+                <th scope="col" style="text-align: left; padding: 0 8px 8px 0; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase; font-weight: 500;">State</th>
+                <th scope="col" style="text-align: left; padding: 0 8px 8px 0; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase; font-weight: 500;">Status</th>
+                <th scope="col" style="text-align: left; padding: 0 0 8px 0; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase; font-weight: 500;">Since</th>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{ g.legal }}" as="l" hint-placeholder-count="6">
+                  <tr style="border-bottom: 1px solid #E1DACE;">
+                    <td style="padding: 10px 8px 10px 0;">{{ l.state }}</td>
+                    <td style="padding: 10px 8px 10px 0; color: {{ l.color }};">{{ l.status }}</td>
+                    <td style="padding: 10px 0; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A4340;">{{ l.since }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+            <p style="margin: 12px 0 0; font-size: 13.5px; color: #6B635C;">Partial list. Legal status is not a safety rating — legal does not mean safe, and a ban does not stop online sales.</p>
+          </section>
+
+          <section id="s-reports" style="margin-bottom: 38px;">
+            <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; margin: 0 0 14px; display: flex; align-items: center; gap: 10px;"><span style="width: 18px; height: 2px; background: #B02A1D;"></span>Related reports</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 28px; margin-bottom: 20px;">
+              <div>
+                <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin: 0 0 12px;">Symptoms reported</p>
+                <ul style="list-style: none; margin: 0; padding: 0; display: grid; gap: 8px;">
+                  <sc-for list="{{ g.symptoms }}" as="s" hint-placeholder-count="5">
+                    <li style="display: grid; grid-template-columns: minmax(0, 130px) minmax(0, 1fr) 28px; gap: 10px; align-items: center; font-size: 14px;">
+                      <span>{{ s.name }}</span>
+                      <span style="display: block; height: 9px; background: #E1DACE;"><span style="display: block; height: 9px; background: #B02A1D; width: {{ s.pct }}%;"></span></span>
+                      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-align: right; color: #4A4340;">{{ s.count }}</span>
+                    </li>
+                  </sc-for>
+                </ul>
+              </div>
+              <div>
+                <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin: 0 0 12px;">Products named</p>
+                <ul style="list-style: none; margin: 0; padding: 0; display: grid; gap: 8px;">
+                  <sc-for list="{{ g.brands }}" as="b" hint-placeholder-count="4">
+                    <li style="display: grid; grid-template-columns: minmax(0, 130px) minmax(0, 1fr) 28px; gap: 10px; align-items: center; font-size: 14px;">
+                      <span>{{ b.name }}</span>
+                      <span style="display: block; height: 9px; background: #E1DACE;"><span style="display: block; height: 9px; background: #24466E; width: {{ b.pct }}%;"></span></span>
+                      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-align: right; color: #4A4340;">{{ b.count }}</span>
+                    </li>
+                  </sc-for>
+                </ul>
+              </div>
+            </div>
+            <ul style="list-style: none; margin: 0 0 16px; padding: 0;">
+              <sc-for list="{{ g.recent }}" as="r" hint-placeholder-count="3">
+                <li>
+                  <button type="button" onClick="{{ r.open }}" style="width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid #E1DACE; cursor: pointer; padding: 13px 6px 13px 0; display: grid; grid-template-columns: 92px minmax(0, 1fr) 110px; gap: 16px; align-items: baseline; color: #171310;" style-hover="background: #F0EBE1">
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #6B635C;">{{ r.dateShort }}</span>
+                    <span style="font-size: 15px;">{{ r.brand }} — {{ r.symptomLine }}</span>
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; text-align: right; color: {{ r.helpColor }};">{{ r.helpLabel }}</span>
+                  </button>
+                </li>
+              </sc-for>
+            </ul>
+            <button type="button" onClick="{{ viewSubReports }}" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; background: none; border: 1px solid #171310; color: #171310; padding: 11px 16px; cursor: pointer;" style-hover="background: #171310; color: #F7F4EE">All {{ g.count }} reports for this product →</button>
+          </section>
+
+          <section id="s-help">
+            <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: #6B635C; margin: 0 0 12px; display: flex; align-items: center; gap: 10px;"><span style="width: 18px; height: 2px; background: #B02A1D;"></span>How to get help</h2>
+            <ul style="list-style: none; margin: 0; padding: 0; display: grid; gap: 12px;">
+              <li style="border-left: 3px solid #2F6B4F; padding-left: 16px; font-size: 15.5px;"><strong>SAMHSA National Helpline — <a href="tel:18006624357" style="font-family: 'IBM Plex Mono', monospace;">1-800-662-4357</a></strong><br>Free, confidential, 24/7 treatment referral in English and Spanish.</li>
+              <li style="border-left: 3px solid #2F6B4F; padding-left: 16px; font-size: 15.5px;"><strong>Poison Control — <a href="tel:18002221222" style="font-family: 'IBM Plex Mono', monospace;">1-800-222-1222</a></strong><br>Nurses and pharmacists, not police. Call before it's an emergency.</li>
+              <li style="border-left: 3px solid #2F6B4F; padding-left: 16px; font-size: 15.5px;"><strong>988 Suicide &amp; Crisis Lifeline — <a href="tel:988" style="font-family: 'IBM Plex Mono', monospace;">988</a></strong><br>Call or text, any hour.</li>
+            </ul>
+          </section>
+        </article>
+
+        <aside style="flex: 1 1 250px; min-width: 0; position: sticky; top: 96px; display: grid; gap: 22px;">
+          <div style="border: 2px solid #B02A1D; padding: 20px;">
+            <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #B02A1D; margin: 0 0 10px;">Right now</p>
+            <p style="font-family: 'Newsreader', serif; font-size: 20px; line-height: 1.25; margin: 0 0 12px;">Feel wrong after taking this?</p>
+            <button type="button" onClick="{{ goEmergency }}" style="width: 100%; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; background: #B02A1D; color: #FFF9F2; border: none; padding: 12px; cursor: pointer;" style-hover="background: #7A1C13">Danger signs &amp; who to call</button>
+          </div>
+          <div style="border: 1px solid #D8D2C6; background: #FFFDF8; padding: 18px 20px;">
+            <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin: 0 0 10px;">Sources</p>
+            <ul style="list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; font-size: 13.5px; line-height: 1.45; color: #4A4340;">
+              <sc-for list="{{ g.sources }}" as="src" hint-placeholder-count="4">
+                <li style="border-bottom: 1px solid #EDE8DE; padding-bottom: 9px;">{{ src }}</li>
+              </sc-for>
+              <li>{{ g.count }} reports submitted to this registry</li>
+            </ul>
+            <p style="font-size: 12.5px; color: #6B635C; margin: 12px 0 0;">Every clinical statement above is drawn from these. <a href="#about" onClick="{{ goAbout }}">How we source</a></p>
+          </div>
+          <div style="border-left: 3px solid #171310; padding-left: 16px;">
+            <p style="font-size: 14px; color: #4A4340; margin: 0 0 10px; line-height: 1.5;">Had a reaction to {{ g.title }}? Adding it takes about four minutes.</p>
+            <button type="button" onClick="{{ goSubmit }}" style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; background: none; border: 1px solid #171310; color: #171310; padding: 10px 14px; cursor: pointer;" style-hover="background: #171310; color: #F7F4EE">Report a reaction</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+  </sc-if>
+
+  <sc-if value="{{ isGuide }}" hint-placeholder-val="{{ false }}">
+  <main style="max-width: 1240px; margin: 0 auto; padding: 44px 24px 72px;">
+    <div style="border-bottom: 2px solid #171310; padding-bottom: 24px; margin-bottom: 30px; max-width: 760px;">
+      <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: #B02A1D; margin: 0 0 10px;">Product guide</p>
+      <h1 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: clamp(34px, 5vw, 54px); line-height: 1.04; margin: 0 0 14px;">Every product we track, by the name on the package.</h1>
+      <p style="font-size: 18px; color: #4A4340; line-height: 1.6; margin: 0;">Every guide follows the same template: what it is, what it actually does, the real risks, interaction warnings, danger signs, dependence and withdrawal, legal status, and the reports filed about it. No doses, ever.</p>
+    </div>
+    <ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+      <sc-for list="{{ guideCards }}" as="g" hint-placeholder-count="9">
+        <li>
+          <button type="button" onClick="{{ g.open }}" style="width: 100%; height: 100%; text-align: left; background: #FFFDF8; border: 1px solid #D8D2C6; border-top: 4px solid #171310; cursor: pointer; padding: 18px 20px 16px; display: grid; gap: 8px; align-content: start; color: #171310;" style-hover="border-color: #B02A1D; background: #F0EBE1">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: {{ g.statusColor }};">{{ g.status }}</span>
+            <span style="font-family: 'Newsreader', serif; font-size: 25px; line-height: 1.1;">{{ g.name }}</span>
+            <span style="font-size: 14.5px; color: #4A4340;">contains {{ g.sub }}</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4A4340; border-top: 1px solid #E1DACE; padding-top: 10px; margin-top: 4px;">{{ g.count }} reports · {{ g.er }} went to the ER</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: #B02A1D;">Read the guide →</span>
+          </button>
+        </li>
+      </sc-for>
+    </ul>
+  </main>
+  </sc-if>
+
+  <sc-if value="{{ isEmergency }}" hint-placeholder-val="{{ false }}">
+  <main style="max-width: 1080px; margin: 0 auto; padding: 40px 24px 72px;">
+    <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: #B02A1D; margin: 0 0 10px;">If you feel off</p>
+    <h1 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: clamp(34px, 5vw, 56px); line-height: 1.04; margin: 0 0 16px; max-width: 20ch;">Start here. It takes ten seconds.</h1>
+    <p style="font-size: 19px; color: #4A4340; line-height: 1.55; margin: 0 0 34px; max-width: 58ch;">You will not get in trouble for calling. Poison Control is not law enforcement, and most states have laws protecting people who call for help during an overdose.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 44px;">
+      <a href="tel:911" style="text-decoration: none; color: #FFF6EE; background: #B02A1D; display: block;" style-hover="background: #7A1C13">
+        <span style="display: block; height: 6px; background-image: repeating-linear-gradient(135deg, #171310 0 7px, #F0C24A 7px 14px);"></span>
+        <span style="display: block; padding: 24px 26px;">
+          <span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 10px;">Life-threatening — call now</span>
+          <span style="display: block; font-family: 'Newsreader', serif; font-size: 54px; line-height: 1;">911</span>
+          <span style="display: block; font-size: 15.5px; margin-top: 10px; color: #FBDDD4; line-height: 1.5;">Can't wake them · slow, stopped or gasping breathing · blue or gray lips · seizure · chest pain</span>
+        </span>
+      </a>
+      <a href="tel:18002221222" style="text-decoration: none; color: #171310; border: 2px solid #171310; background: #FFFDF8; display: block;" style-hover="background: #F0EBE1">
+        <span style="display: block; padding: 30px 26px 24px;">
+          <span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 10px; color: #4A4340;">Not life-threatening — free, 24/7</span>
+          <span style="display: block; font-family: 'Newsreader', serif; font-size: 40px; line-height: 1;">1-800-222-1222</span>
+          <span style="display: block; font-size: 15.5px; margin-top: 10px; color: #4A4340; line-height: 1.5;">Poison Control. Nurses and pharmacists who deal with this daily. Confidential, no name required.</span>
+        </span>
+      </a>
+    </div>
+
+    <section style="margin-bottom: 44px;">
+      <h2 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: 32px; line-height: 1.12; margin: 0 0 6px;">Danger signs</h2>
+      <p style="font-size: 16px; color: #4A4340; margin: 0 0 20px;">Any one of these is a reason to call 911, whatever was taken.</p>
+      <ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1px; background: #D8D2C6; border: 1px solid #D8D2C6;">
+        <sc-for list="{{ dangerSigns }}" as="d" hint-placeholder-count="8">
+          <li style="background: #FFFDF8; padding: 16px 18px; display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 12px; font-size: 16px; line-height: 1.45;">
+            <span style="width: 12px; height: 12px; background: #B02A1D; margin-top: 5px;"></span>{{ d }}
+          </li>
+        </sc-for>
+      </ul>
+    </section>
+
+    <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; margin-bottom: 44px;">
+      <div>
+        <h2 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: 28px; line-height: 1.15; margin: 0 0 14px;">What to tell responders</h2>
+        <ol style="margin: 0; padding-left: 20px; font-size: 16.5px; line-height: 1.6; display: grid; gap: 10px; color: #26201B;">
+          <li>The exact product name on the package — read it off the label.</li>
+          <li>How much, and when. A rough answer is fine.</li>
+          <li>Everything else taken today, including alcohol and prescriptions.</li>
+          <li>Any conditions or medicines you take regularly.</li>
+          <li><strong>Bring the package or bottle</strong> — it tells them more than a name can.</li>
+        </ol>
+      </div>
+      <div>
+        <h2 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: 28px; line-height: 1.15; margin: 0 0 14px;">While you wait</h2>
+        <ul style="margin: 0; padding: 0; list-style: none; font-size: 16.5px; line-height: 1.6; display: grid; gap: 12px; color: #26201B;">
+          <li style="border-left: 3px solid #171310; padding-left: 14px;">Stay with the person. Don't leave them to sleep it off alone.</li>
+          <li style="border-left: 3px solid #171310; padding-left: 14px;">If they're unresponsive but breathing, turn them on their side.</li>
+          <li style="border-left: 3px solid #171310; padding-left: 14px;">If an opioid or tianeptine may be involved and you have naloxone, use it — then still call 911.</li>
+          <li style="border-left: 3px solid #171310; padding-left: 14px;">Don't induce vomiting unless Poison Control tells you to.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section style="border: 2px solid #171310; background: #FFFDF8; margin-bottom: 44px;">
+      <div style="height: 6px; background-image: repeating-linear-gradient(135deg, #171310 0 7px, #F0C24A 7px 14px);"></div>
+      <div style="padding: 26px 28px;">
+        <h2 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: 28px; line-height: 1.15; margin: 0 0 12px;">Withdrawal can be the dangerous part</h2>
+        <p style="font-size: 16.5px; line-height: 1.6; color: #26201B; margin: 0 0 12px; max-width: 68ch;">Stopping <strong>phenibut</strong> or other GABA-B drugs abruptly after regular use can cause seizures, hallucinations and delirium — this is a medical emergency, like alcohol or benzodiazepine withdrawal. <strong>Tianeptine</strong> withdrawal is opioid-like and, while less immediately life-threatening, is severe enough that people relapse to escape it.</p>
+        <p style="font-size: 16.5px; line-height: 1.6; color: #26201B; margin: 0;">Do not white-knuckle it alone. Tell a clinician exactly what you've been taking and how much — there are protocols for both.</p>
+      </div>
+    </section>
+
+    <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+      <div style="border-left: 3px solid #2F6B4F; padding-left: 16px;">
+        <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin: 0 0 8px;">In crisis</p>
+        <p style="margin: 0 0 4px; font-size: 18px;"><a href="tel:988" style="font-family: 'IBM Plex Mono', monospace; font-size: 22px;">988</a></p>
+        <p style="margin: 0; font-size: 14.5px; color: #4A4340;">Suicide &amp; Crisis Lifeline. Call or text, 24/7.</p>
+      </div>
+      <div style="border-left: 3px solid #2F6B4F; padding-left: 16px;">
+        <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin: 0 0 8px;">Treatment referral</p>
+        <p style="margin: 0 0 4px; font-size: 18px;"><a href="tel:18006624357" style="font-family: 'IBM Plex Mono', monospace; font-size: 22px;">1-800-662-4357</a></p>
+        <p style="margin: 0; font-size: 14.5px; color: #4A4340;">SAMHSA National Helpline. Free, confidential.</p>
+      </div>
+      <div style="border-left: 3px solid #2F6B4F; padding-left: 16px;">
+        <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin: 0 0 8px;">Afterwards</p>
+        <p style="margin: 0 0 10px; font-size: 14.5px; color: #4A4340;">When you're safe, telling us what happened helps the next person searching at 2am.</p>
+        <button type="button" onClick="{{ goSubmit }}" style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; background: none; border: 1px solid #171310; color: #171310; padding: 10px 14px; cursor: pointer;" style-hover="background: #171310; color: #F7F4EE">Report a reaction</button>
+      </div>
+    </section>
+  </main>
+  </sc-if>
+
+  <sc-if value="{{ isAbout }}" hint-placeholder-val="{{ false }}">
+  <main style="max-width: 1240px; margin: 0 auto; padding: 44px 24px 72px;">
+    <div style="border-bottom: 2px solid #171310; padding-bottom: 26px; margin-bottom: 34px; max-width: 760px;">
+      <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: #B02A1D; margin: 0 0 10px;">About</p>
+      <h1 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: clamp(34px, 5vw, 56px); line-height: 1.04; margin: 0 0 16px;">Who runs this, and why you can check our work.</h1>
+      <p style="font-size: 19px; color: #4A4340; line-height: 1.6; margin: 0;">StreetMedWatch is a small independent project run by harm-reduction workers, a nurse, and two people who build software. We started it after watching friends and family get hurt by products bought legally, at a counter, with no way to find out what had happened to anyone else.</p>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start;">
+      <div style="flex: 2 1 400px; min-width: 0;">
+        <section style="margin-bottom: 40px;">
+          <h2 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: 30px; line-height: 1.12; margin: 0 0 14px;">How we verify</h2>
+          <ol style="list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; background: #D8D2C6; border: 1px solid #D8D2C6;">
+            <sc-for list="{{ verifySteps }}" as="v" hint-placeholder-count="4">
+              <li style="background: #FFFDF8; padding: 18px 20px; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 14px;">
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #B02A1D; padding-top: 3px;">{{ v.n }}</span>
+                <span>
+                  <strong style="display: block; font-size: 16.5px; margin-bottom: 4px;">{{ v.title }}</strong>
+                  <span style="font-size: 15.5px; color: #4A4340; line-height: 1.55;">{{ v.body }}</span>
+                </span>
+              </li>
+            </sc-for>
+          </ol>
+        </section>
+
+        <section style="margin-bottom: 40px;">
+          <h2 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: 30px; line-height: 1.12; margin: 0 0 14px;">What we don't do</h2>
+          <ul style="list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; font-size: 16.5px; line-height: 1.6;">
+            <li style="border-left: 3px solid #B02A1D; padding-left: 16px;">We don't publish doses, sourcing, or anything that reads as instructions.</li>
+            <li style="border-left: 3px solid #B02A1D; padding-left: 16px;">We don't rank substances by "what's trending" — only by reported harm.</li>
+            <li style="border-left: 3px solid #B02A1D; padding-left: 16px;">We don't sell, share, or monetize report data, and we don't run ads.</li>
+            <li style="border-left: 3px solid #B02A1D; padding-left: 16px;">We don't claim a report proves a product caused a reaction. Reports are accounts, not evidence.</li>
+          </ul>
+        </section>
+
+        <section style="margin-bottom: 40px;">
+          <h2 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: 30px; line-height: 1.12; margin: 0 0 14px;">Privacy, plainly</h2>
+          <p style="font-size: 16.5px; line-height: 1.65; color: #26201B; margin: 0 0 12px;">Reports are anonymous by design. We do not require an account, we do not store IP addresses with reports, and we strip identifying details before publication. That's also the trade-off: once a report is submitted, we have no way to tie it back to you, which means we can't retrieve or delete it on request.</p>
+          <p style="font-size: 16.5px; line-height: 1.65; color: #26201B; margin: 0;">Alert sign-ups store one email and one state, used only for alerts. Analytics are aggregate and cookie-free.</p>
+        </section>
+
+        <section>
+          <h2 style="font-family: 'Newsreader', serif; font-weight: 500; font-size: 30px; line-height: 1.12; margin: 0 0 14px;">Funding</h2>
+          <p style="font-size: 16.5px; line-height: 1.65; color: #26201B; margin: 0;">Two small public-health grants and individual donations. No industry money — not from supplement makers, smoke-shop distributors, treatment centers, or anyone selling a product mentioned on this site. Annual finances are published in full.</p>
+        </section>
+      </div>
+
+      <aside style="flex: 1 1 260px; min-width: 0; display: grid; gap: 24px; position: sticky; top: 96px;">
+        <div style="border: 1px solid #D8D2C6; background: #FFFDF8;">
+          <div style="height: 6px; background-image: repeating-linear-gradient(135deg, #171310 0 7px, #F0C24A 7px 14px);"></div>
+          <div style="padding: 20px;">
+            <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin: 0 0 12px;">Where our clinical claims come from</p>
+            <ul style="list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: 14px; line-height: 1.45; color: #4A4340;">
+              <li style="border-bottom: 1px solid #EDE8DE; padding-bottom: 10px;">FDA safety communications &amp; import alerts</li>
+              <li style="border-bottom: 1px solid #EDE8DE; padding-bottom: 10px;">CDC MMWR reports</li>
+              <li style="border-bottom: 1px solid #EDE8DE; padding-bottom: 10px;">America's Poison Centers exposure data</li>
+              <li style="border-bottom: 1px solid #EDE8DE; padding-bottom: 10px;">Peer-reviewed clinical case literature</li>
+              <li>State legislature and health-department records</li>
+            </ul>
+            <p style="font-size: 13px; color: #6B635C; margin: 14px 0 0;">Each substance page lists its own sources. Found something wrong? <a href="mailto:corrections@streetmedwatch.org">corrections@streetmedwatch.org</a></p>
+          </div>
+        </div>
+        <div style="border: 2px solid #171310; padding: 20px;">
+          <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6B635C; margin: 0 0 10px;">Medical disclaimer</p>
+          <p style="font-size: 14.5px; line-height: 1.55; color: #26201B; margin: 0;">Nothing here is medical advice or a substitute for a clinician. If you are unwell, call Poison Control at <a href="tel:18002221222" style="font-family: 'IBM Plex Mono', monospace;">1-800-222-1222</a> or 911. We describe risks and publish accounts; we cannot diagnose or treat anyone.</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+  </sc-if>
+
+  <footer style="background: #171310; color: #A9A196; margin-top: 0;">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 46px 24px 30px; display: grid; grid-template-columns: minmax(0, 1.3fr) repeat(auto-fit, minmax(150px, 1fr)); gap: 40px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 11px; margin-bottom: 14px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="1.5" y="1.5" width="21" height="21" fill="none" stroke="#EFE9DE" stroke-width="2"></rect>
+            <rect x="1.5" y="15.5" width="21" height="7" fill="#B02A1D"></rect>
+            <circle cx="12" cy="9" r="2.6" fill="#EFE9DE"></circle>
+          </svg>
+          <strong style="font-family: 'Newsreader', serif; font-size: 19px; color: #EFE9DE; font-weight: 600;">StreetMedWatch</strong>
+        </div>
+        <p style="font-size: 14.5px; line-height: 1.6; margin: 0 0 14px; max-width: 42ch;">A community adverse-reaction registry for loosely regulated substances. Independent, non-commercial, and not affiliated with the FDA or its MedWatch program.</p>
+        <p style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; margin: 0; color: #6E665C;">Emergency? <a href="tel:911" style="color: #E8A198;">911</a> · Poison Control <a href="tel:18002221222" style="color: #E8A198;">1-800-222-1222</a></p>
+      </div>
+      <nav aria-label="Reports" style="display: grid; gap: 9px; align-content: start; font-size: 14.5px;">
+        <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6E665C; margin: 0 0 4px;">Reports</p>
+        <a href="#reports" onClick="{{ goReports }}" style="color: #D6CFC3; text-decoration: none;" style-hover="color: #FFF6EE">Browse the registry</a>
+        <a href="#submit" onClick="{{ goSubmit }}" style="color: #D6CFC3; text-decoration: none;" style-hover="color: #FFF6EE">Report a reaction</a>
+        <a href="#guide" onClick="{{ goGuide }}" style="color: #D6CFC3; text-decoration: none;" style-hover="color: #FFF6EE">Product guide</a>
+      </nav>
+      <nav aria-label="Help" style="display: grid; gap: 9px; align-content: start; font-size: 14.5px;">
+        <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6E665C; margin: 0 0 4px;">Help</p>
+        <a href="#emergency" onClick="{{ goEmergency }}" style="color: #D6CFC3; text-decoration: none;" style-hover="color: #FFF6EE">I feel off</a>
+        <a href="tel:988" style="color: #D6CFC3; text-decoration: none;" style-hover="color: #FFF6EE">988 Crisis Lifeline</a>
+        <a href="tel:18006624357" style="color: #D6CFC3; text-decoration: none;" style-hover="color: #FFF6EE">SAMHSA referral line</a>
+      </nav>
+      <nav aria-label="Project" style="display: grid; gap: 9px; align-content: start; font-size: 14.5px;">
+        <p style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #6E665C; margin: 0 0 4px;">Project</p>
+        <a href="#about" onClick="{{ goAbout }}" style="color: #D6CFC3; text-decoration: none;" style-hover="color: #FFF6EE">About &amp; method</a>
+        <a href="mailto:corrections@streetmedwatch.org" style="color: #D6CFC3; text-decoration: none;" style-hover="color: #FFF6EE">Submit a correction</a>
+        <a href="#about" onClick="{{ goAbout }}" style="color: #D6CFC3; text-decoration: none;" style-hover="color: #FFF6EE">Privacy</a>
+      </nav>
+    </div>
+    <div style="border-top: 1px solid #2E2822;">
+      <div style="max-width: 1240px; margin: 0 auto; padding: 16px 24px; display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .08em; color: #6E665C;">
+        <span>© 2026 StreetMedWatch · Reports are unverified personal accounts</span>
+        <span>Not medical advice · Not affiliated with the FDA</span>
+      </div>
+    </div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;feedLength&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:6,&quot;min&quot;:3,&quot;max&quot;:12,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Homepage&quot;}}">
+const RED = '#B02A1D', BLUE = '#24466E', GREEN = '#2F6B4F', AMBER = '#9A6B10';
+
+// [id, date, substance, brand, amount, takenWith, symptoms, duration, help, outcome, state, note]
+const RAW = [
+  ['R-2481','2026-07-21','Tianeptine','Za Za Red','most of a bottle','Nothing','Vomiting|Racing heart|Confusion','6-12 hours','Emergency room','Hospitalized','OH',"Bought it at the counter like it was an energy shot. Two hours later I could not stop throwing up and my heart was going so fast I thought I was dying."],
+  ['R-2479','2026-07-20','7-OH','7-OH Extra Strength tablets','two tablets','Nothing','Vomiting|Sweating|Severe withdrawal','1-3 days','None','Ongoing','TX','Started as one tablet after work. Three weeks in I was sick every morning until I took one. Quitting felt like the flu times ten.'],
+  ['R-2476','2026-07-19','Nitrous oxide','Galaxy Gas','a full canister over a night','Alcohol','Numbness/tingling|Trouble walking|Confusion','More than a week','Urgent care','Ongoing','GA','My hands and feet went numb and never fully came back. Doctor said B12 and nerve damage.'],
+  ['R-2470','2026-07-17','Tianeptine','Neptune Elixir','one bottle','Prescription SSRI','Racing heart|Panic/anxiety|Tremors','6-12 hours','Poison Control','Recovered','AL','Called poison control at 3am. They stayed on the phone with me until my heart slowed down.'],
+  ['R-2466','2026-07-15','Phenibut','bulk powder online','unknown, eyeballed','Alcohol','Blackout|Confusion|Fainting','12-24 hours','Emergency room','Hospitalized','FL','Woke up in the ER with no memory of the night. My roommate found me unresponsive on the kitchen floor.'],
+  ['R-2461','2026-07-13','Delta-8 THC','gas station gummies','two gummies','Nothing','Panic/anxiety|Racing heart|Hallucinations','6-12 hours','Emergency room','Recovered','NC','Package said mellow. I had the worst panic attack of my life and was convinced I was having a stroke.'],
+  ['R-2458','2026-07-11','7-OH','shot bottle at smoke shop','one bottle','Kratom tea','Vomiting|Racing heart|Sweating','3-6 hours','None','Recovered','TN','Nobody at the shop said this was different from regular kratom. It is not the same thing.'],
+  ['R-2452','2026-07-08','Tianeptine','Za Za Silver','several capsules over a day','Nothing','Severe withdrawal|Insomnia|Tremors','More than a week','Urgent care','Ongoing','MS','I am not using to feel good anymore. I am using so I can get out of bed.'],
+  ['R-2447','2026-07-05','Amanita gummies','Amanita Dream cubes','one cube','Nothing','Confusion|Nausea|Hallucinations','6-12 hours','Poison Control','Recovered','CA','Sold next to the CBD like candy. I lost four hours and could not tell what was real.'],
+  ['R-2441','2026-07-02','Nitrous oxide','Galaxy Gas','a night of use','Delta-8','Fainting|Numbness/tingling|Chest pain','1-3 days','Emergency room','Recovered','GA','Passed out and hit my head on the counter. Stitches and a very long talk with a neurologist.'],
+  ['R-2436','2026-06-28','Tianeptine','Tianna Red','two bottles','Alcohol','Trouble breathing|Blackout|Confusion','6-12 hours','Emergency room','Hospitalized','KY','My girlfriend gave me Narcan before the ambulance got there. The ER doctor said that is probably why I am here.'],
+  ['R-2430','2026-06-25','Phenibut','capsules from a vape shop','daily for a month','Nothing','Severe withdrawal|Panic/anxiety|Insomnia','More than a week','Emergency room','Recovered','WA','Stopping cold turkey put me in the hospital. I did not know that could happen from something sold at a shop.'],
+  ['R-2425','2026-06-22','7-OH','7-OH tablets','three tablets','Nothing','Vomiting|Sweating|Racing heart','3-6 hours','Poison Control','Recovered','TX','Threw up for six hours straight. Poison control was calm and did not make me feel like a criminal.'],
+  ['R-2419','2026-06-19','Delta-8 THC','vape cart, smoke shop','a few pulls','Nothing','Racing heart|Panic/anxiety|Chest pain','1-3 hours','Urgent care','Recovered','NY','19 years old, no drug history, ended up in urgent care thinking my heart was failing.'],
+  ['R-2413','2026-06-15','Tianeptine','Za Za Red','one bottle','Prescription benzodiazepine','Trouble breathing|Confusion|Fainting','3-6 hours','Emergency room','Hospitalized','OH','I did not know it worked like an opioid. Combining it with my anxiety medication nearly killed me.'],
+  ['R-2408','2026-06-11','Kava','kava bar drink','several shells','Alcohol','Nausea|Trouble walking|Numbness/tingling','3-6 hours','None','Recovered','FL','Mostly fine but the numbness and how hard it hit with alcohol surprised me.'],
+  ['R-2402','2026-06-07','7-OH','extract shot','one shot daily','Nothing','Severe withdrawal|Insomnia|Sweating','More than a week','None','Ongoing','AZ','Two weeks of daily use and I am physically dependent. That happened much faster than I expected.'],
+  ['R-2396','2026-06-03','Nitrous oxide','whippet chargers','a box','Nothing','Numbness/tingling|Confusion|Fainting','1-3 days','Urgent care','Ongoing','IL','Tingling in my legs that has not gone away in a month.'],
+  ['R-2390','2026-05-29','Tianeptine','Neptune Elixir','unknown','Nothing','Racing heart|Vomiting|Panic/anxiety','6-12 hours','Poison Control','Recovered','LA','Bought it because a coworker said it helped his mood. Ended up shaking on the bathroom floor.'],
+  ['R-2384','2026-05-24','Phenibut','powder','a heaped scoop','Alcohol','Blackout|Vomiting|Confusion','12-24 hours','Emergency room','Recovered','CO','Measuring powder by eye is how people end up in the ER. I am one of them.'],
+  ['R-2377','2026-05-19','Amanita gummies','Shroom Boom gummies','two gummies','Nothing','Nausea|Confusion|Tremors','6-12 hours','None','Recovered','MI','Very unpleasant and much stronger than the package suggested.'],
+  ['R-2371','2026-05-14','7-OH','7-OH Extra Strength tablets','two tablets','Alcohol','Vomiting|Fainting|Racing heart','3-6 hours','Emergency room','Recovered','TX','Fainted in a parking lot. Somebody called an ambulance for me.'],
+  ['R-2364','2026-05-09','Delta-8 THC','edible from gas station','one package','Nothing','Hallucinations|Panic/anxiety|Vomiting','12-24 hours','Emergency room','Recovered','NC','The whole bag was one serving apparently. Twelve hours of hell.'],
+  ['R-2358','2026-05-03','Tianeptine','Za Za Silver','several bottles a day','Nothing','Severe withdrawal|Sweating|Insomnia','More than a week','Urgent care','Ongoing','AL','Spending 60 dollars a day at the gas station to not be sick.'],
+  ['R-2351','2026-04-27','Nitrous oxide','Galaxy Gas','multiple canisters','Nothing','Numbness/tingling|Trouble walking','More than a week','Urgent care','Ongoing','GA','I am 22 and I walk with a cane right now. Nerve damage from B12 depletion.'],
+  ['R-2344','2026-04-20','Phenibut','capsules','daily','Nothing','Severe withdrawal|Tremors|Panic/anxiety','More than a week','Poison Control','Recovered','WA','Tapering with a doctor worked. Trying alone did not.'],
+  ['R-2337','2026-04-12','Tianeptine','Tianna Red','one bottle','Nothing','Vomiting|Racing heart','3-6 hours','None','Recovered','TN','Never again. It felt like being poisoned.'],
+  ['R-2329','2026-04-04','7-OH','shot bottle','two bottles','Nothing','Vomiting|Confusion|Sweating','6-12 hours','Poison Control','Recovered','OK','The shop clerk recommended it for pain. I had no idea what it was.'],
+  ['R-2320','2026-03-26','Delta-8 THC','gummies','half a package','Nothing','Racing heart|Panic/anxiety','3-6 hours','None','Recovered','PA','Anxiety for two days afterwards.'],
+  ['R-2311','2026-03-15','Tianeptine','Za Za Red','unknown','Alcohol','Blackout|Trouble breathing','6-12 hours','Emergency room','Hospitalized','OH','My brother found me. I do not remember any of it.'],
+  ['R-2301','2026-03-02','Kava','kava extract capsules','two capsules','Prescription medication','Nausea|Confusion','3-6 hours','None','Recovered','OR','Interacted with my medication in a way nobody warned me about.'],
+  ['R-2288','2026-02-14','Phenibut','powder online','unknown','Nothing','Fainting|Confusion|Insomnia','12-24 hours','Emergency room','Recovered','CO','Ordered it like it was a supplement. It is not a supplement.'],
+  ['R-2272','2026-01-28','Tianeptine','Neptune Elixir','two bottles','Nothing','Racing heart|Vomiting|Tremors','6-12 hours','Emergency room','Hospitalized','FL','Second ER visit in a month for the same product.'],
+  ['R-2255','2026-01-09','Nitrous oxide','whippet chargers','unknown','Alcohol','Fainting|Numbness/tingling','1-3 days','None','Recovered','IL','Woke up on the floor of a party with no idea how long I had been out.'],
+  ['R-2231','2025-12-12','7-OH','7-OH tablets','one tablet','Nothing','Nausea|Sweating','1-3 hours','None','Recovered','TX','Sick for an afternoon from a single tablet.'],
+  ['R-2210','2025-11-20','Tianeptine','Za Za Red','one bottle','Nothing','Panic/anxiety|Racing heart','3-6 hours','Poison Control','Recovered','MS','Poison control talked me through it. No judgment at all.'],
+  ['R-2186','2025-10-30','Delta-8 THC','vape cart','a few pulls','Nothing','Panic/anxiety|Chest pain','1-3 hours','Urgent care','Recovered','NY','Kids are buying these at the corner store.'],
+  ['R-2160','2025-10-02','Phenibut','capsules','daily for weeks','Nothing','Severe withdrawal|Insomnia','More than a week','Urgent care','Recovered','WA','The withdrawal is the part nobody tells you about.'],
+  ['R-2131','2025-09-08','Tianeptine','Za Za Silver','several capsules','Nothing','Vomiting|Confusion','6-12 hours','None','Recovered','KY','Marketed as a mood supplement on the shelf by the register.'],
+  ['R-2104','2025-08-16','Amanita gummies','Amanita Dream cubes','two cubes','Alcohol','Confusion|Nausea|Hallucinations','6-12 hours','Poison Control','Recovered','CA','Bought as a legal alternative. Very disorienting and frightening.'],
+];
+
+const SOLD_AS = {
+  'Tianeptine': 'Za Za · Tianna · Neptune · "gas station heroin"',
+  '7-OH': 'kratom extract · gas-station kratom · 7-OH tablets · \u201Cseven\u201D',
+  'Phenibut': 'F-Phenibut · "calm" capsules · bulk powder',
+  'Nitrous oxide': 'Galaxy Gas · whippets · chargers · "nangs"',
+  'Delta-8 THC': 'D8 · hemp gummies · legal weed',
+  'Amanita gummies': 'Amanita muscaria · "legal mushroom" gummies',
+  'Kava': 'kava bar drinks · kava extract capsules'
+};
+
+// brand / street name → substance it contains
+const BRANDS = [
+  ['Za Za Red', 'Tianeptine'], ['Za Za Silver', 'Tianeptine'], ['Tianna Red', 'Tianeptine'],
+  ['Neptune Elixir', 'Tianeptine'], ['Pegasus / Tianna Green', 'Tianeptine'],
+  ['7-OH Extra Strength tablets', '7-OH'], ['7-OH tablets', '7-OH'], ['7-OH shot bottle', '7-OH'],
+  ['Kratom extract shot', '7-OH'], ['Kratom extract tablets', '7-OH'], ['Gas-station kratom shot', '7-OH'],
+  ['\u201CSeven\u201D / 7-hydroxy tablets', '7-OH'],
+  ['Galaxy Gas', 'Nitrous oxide'], ['Whippet chargers', 'Nitrous oxide'],
+  ['Phenibut capsules', 'Phenibut'], ['Phenibut bulk powder', 'Phenibut'], ['F-Phenibut', 'Phenibut'],
+  ['Delta-8 gummies', 'Delta-8 THC'], ['Delta-8 vape cart', 'Delta-8 THC'], ['Delta-8 edible', 'Delta-8 THC'],
+  ['Amanita Dream cubes', 'Amanita gummies'], ['Shroom Boom gummies', 'Amanita gummies'],
+  ['Kava bar drink', 'Kava'], ['Kava extract capsules', 'Kava']
+];
+
+
+const GUIDES = {
+  'Za Za': {
+    title: 'Za Za, Tianna & Neptune', contains: 'All contain tianeptine', reviewed: '14 Jul 2026',
+    intro: 'An antidepressant in France, an unapproved drug in the United States, and a gas-station capsule marketed as a mood or energy supplement. At the doses people actually take, it behaves like an opioid.',
+    soldAs: ['Za Za', 'Za Za Red', 'Tianna Red', 'Neptune Elixir', 'Tianna Green', '"gas station heroin"'],
+    whatIs: [
+      'Tianeptine is a prescription antidepressant in parts of Europe, Asia and Latin America. It has never been approved for any use in the United States, and the FDA has warned about it repeatedly. Sold here in capsules, powders and small "shot" bottles at gas stations, vape shops and online, usually labeled as a dietary supplement or nootropic.',
+      'At therapeutic doses it acts mostly on glutamate signaling. At the far larger amounts sold and taken recreationally it is a full mu-opioid receptor agonist \u2014 which is why withdrawal looks like opioid withdrawal and why overdoses respond, sometimes, to naloxone.'
+    ],
+    effects: ['People describe warmth, sedation and relief that fades within hours, followed by a hard crash. Tolerance builds quickly \u2014 within weeks, many users report needing several times the original amount for the same effect, and dosing every few hours around the clock to avoid withdrawal.'],
+    risks: [
+      { n: '01', title: 'Opioid-receptor overdose', body: 'Slowed or stopped breathing, especially with alcohol, benzodiazepines or other opioids. This is the mechanism behind most reported hospitalizations.' },
+      { n: '02', title: 'Fast physical dependence', body: 'Users commonly describe dependence within weeks, dosing around the clock to hold off withdrawal.' },
+      { n: '03', title: 'Cardiac and neurologic effects', body: 'Tachycardia, agitation, confusion and seizures are documented in poison-center case series.' },
+      { n: '04', title: 'Unknown contents', body: 'Products are unregulated. Independent testing has found doses far off label, and bottles containing other synthetic drugs entirely.' },
+      { n: '05', title: 'No safety net', body: 'Because it is sold as a supplement, nothing recalls a bad batch and no pharmacist reviews your other medicines.' }
+    ],
+    interactions: [
+      { with: 'Alcohol', risk: 'Compounds respiratory depression and blackouts. The most common combination in our ER-involved reports.' },
+      { with: 'Benzodiazepines', risk: 'Serious risk of stopped breathing. Includes prescribed anxiety and sleep medication.' },
+      { with: 'Other opioids', risk: 'Additive at the same receptor \u2014 including kratom, 7-OH, and prescribed pain medication.' },
+      { with: 'SSRIs / SNRIs', risk: 'Reports of serotonergic reactions and worsened agitation. Tell your prescriber.' },
+      { with: 'Gabapentinoids', risk: 'Sedation stacks quietly; people underestimate how impaired they are.' }
+    ],
+    dangerSigns: ['Breathing slow, shallow, or stopped', 'Cannot be woken up', 'Blue or gray lips and fingertips', 'Seizure', 'Chest pain or a heart rate that will not settle', 'Severe confusion or agitation'],
+    antidote: 'Naloxone (Narcan) can reverse tianeptine overdose because it acts on the same receptors. Give it if you have it, then still call 911 \u2014 it can wear off before the tianeptine does.',
+    dependence: [
+      'Physical dependence develops fast and withdrawal is described by users and clinicians as opioid-like: sweating, chills, cramping, diarrhea, insomnia, restless legs, severe anxiety and cravings, beginning a handful of hours after the last dose.',
+      'Stopping abruptly on your own is where people get hurt. Withdrawal from tianeptine is treatable \u2014 buprenorphine and other opioid-withdrawal protocols are used in practice. Telling an ER or clinic exactly what you have been taking is the single most useful thing you can do.'
+    ],
+    legalIntro: 'Not federally scheduled; not approved for any medical use. A growing list of states ban or schedule it, which is why the same bottle is illegal in one state and on a counter across the border.',
+    legal: [
+      { state: 'Alabama', status: 'Schedule II \u2014 banned', level: 'ban', since: '2021' },
+      { state: 'Florida', status: 'Schedule I \u2014 banned', level: 'ban', since: '2023' },
+      { state: 'Georgia', status: 'Schedule I \u2014 banned', level: 'ban', since: '2022' },
+      { state: 'Ohio', status: 'Prohibited in food & supplements', level: 'ban', since: '2024' },
+      { state: 'Kentucky', status: 'Restricted sale', level: 'limit', since: '2025' },
+      { state: 'Texas', status: 'No state restriction', level: 'none', since: '\u2014' },
+      { state: 'California', status: 'Legislation pending', level: 'limit', since: '2026' }
+    ],
+    sources: ['FDA safety communications on tianeptine, 2018\u20132025', 'CDC MMWR, tianeptine exposures reported to poison centers', "America's Poison Centers annual exposure data", 'Peer-reviewed case reports of dependence and withdrawal']
+  },
+
+  'Tianna': { alias: 'Za Za' },
+  'Neptune Elixir': { alias: 'Za Za' },
+
+  '7-OH \u201Ckratom\u201D tablets & shots': {
+    title: '7-OH tablets & shots', contains: 'Concentrated 7-OH \u2014 sold as \u201Ckratom\u201D', reviewed: '11 Jul 2026',
+    intro: 'Sold beside the kratom powder and called the same thing, but these are a concentrated extract of one minor alkaloid \u2014 far stronger at the opioid receptor than the leaf they came from.',
+    soldAs: ['7-OH', '7-hydroxymitragynine', '\u201Cseven\u201D', 'kratom extract shot', 'gas-station kratom', '7-OH Extra Strength'],
+    whatIs: [
+      '7-hydroxymitragynine (7-OH) occurs in kratom leaf in trace amounts. The tablets and shots sold in smoke shops are enriched or semi-synthetic products in which it is the main active ingredient \u2014 a different drug in practice from brewed kratom leaf.',
+      'It is a potent mu-opioid receptor agonist. The FDA has recommended scheduling it and has warned that these concentrated products are not the traditional botanical they are marketed as.'
+    ],
+    effects: ['People describe a short, strong opioid-like effect and then a rapid drop. Reports to this registry consistently describe tolerance climbing within days and morning sickness that only the next tablet relieves \u2014 a pattern people did not expect from something labelled a herbal supplement.'],
+    risks: [
+      { n: '01', title: 'Respiratory depression', body: 'Opioid overdose is possible, particularly combined with alcohol, benzodiazepines or prescription opioids.' },
+      { n: '02', title: 'Dependence within days to weeks', body: 'The most common story in our registry: daily use begun for pain or energy, physical dependence inside a month.' },
+      { n: '03', title: 'Wildly inconsistent strength', body: 'Independent testing finds tablet-to-tablet and batch-to-batch variation. "The same product" is not the same dose twice.' },
+      { n: '04', title: 'Mistaken for leaf kratom', body: 'People switch from tea to extract believing it is equivalent. It is not, and that switch drives many of the reactions filed here.' },
+      { n: '05', title: 'Repeated vomiting and dehydration', body: 'The single most reported symptom for this product \u2014 severe enough in several reports to require IV fluids.' }
+    ],
+    interactions: [
+      { with: 'Alcohol', risk: 'Additive sedation and respiratory depression; also drives the vomiting and fainting reported here.' },
+      { with: 'Benzodiazepines', risk: 'Serious risk of stopped breathing.' },
+      { with: 'Other opioids', risk: 'Same receptor, additive effect \u2014 including tianeptine products and prescribed pain medication.' },
+      { with: 'Leaf kratom', risk: 'People take both without realising they are stacking the same mechanism.' },
+      { with: 'MAOIs', risk: 'Case reports of severe reactions; avoid entirely.' }
+    ],
+    dangerSigns: ['Breathing slow, shallow, or stopped', 'Cannot be woken up', 'Blue or gray lips', 'Vomiting that will not stop, or no fluids staying down', 'Fainting or near-fainting', 'Seizure'],
+    antidote: 'Naloxone (Narcan) works on 7-OH overdose \u2014 it acts at the same receptor. Use it if you have it and call 911 anyway; it can wear off before the drug does.',
+    dependence: [
+      'Withdrawal is opioid-type: sweating, chills, cramps, diarrhea, restlessness, insomnia and intense craving, usually starting within a day of the last dose. Registry reports describe it as worse than they experienced from leaf kratom.',
+      'This is treatable. Clinicians use the same protocols as for other opioid withdrawal, including buprenorphine. Say "concentrated 7-OH extract, not leaf kratom" \u2014 the distinction changes how you are treated.'
+    ],
+    legalIntro: 'Kratom law is a patchwork, and concentrated 7-OH products often fall under different rules than leaf. Several states regulate extract potency specifically.',
+    legal: [
+      { state: 'Alabama', status: 'Kratom banned outright', level: 'ban', since: '2016' },
+      { state: 'Arkansas', status: 'Kratom banned outright', level: 'ban', since: '2016' },
+      { state: 'Colorado', status: '7-OH content capped', level: 'limit', since: '2024' },
+      { state: 'Louisiana', status: '7-OH products prohibited', level: 'ban', since: '2025' },
+      { state: 'Oklahoma', status: 'Kratom Consumer Protection Act \u2014 labelling & age limits', level: 'limit', since: '2021' },
+      { state: 'Texas', status: 'No potency restriction', level: 'none', since: '\u2014' }
+    ],
+    sources: ['FDA statements on 7-hydroxymitragynine products, 2025', 'FDA import alerts on kratom extracts', "America's Poison Centers kratom exposure data", 'Peer-reviewed pharmacology of mitragynine vs 7-OH']
+  },
+
+  'Galaxy Gas & whippets': {
+    title: 'Galaxy Gas & whippets', contains: 'Nitrous oxide', reviewed: '09 Jul 2026',
+    intro: 'Flavoured nitrous canisters sold in smoke shops and online as culinary chargers. The harm here is rarely a single overdose \u2014 it is nerve and spinal-cord damage that builds up, sometimes permanently.',
+    soldAs: ['Galaxy Gas', 'whippets', 'whip-its', 'chargers', 'nangs', 'cream chargers'],
+    whatIs: [
+      'Nitrous oxide is a real anaesthetic gas with legitimate medical and food uses. The flavoured, brightly branded tanks sold for recreational inhalation are the same gas in much larger volumes than a whipped-cream charger.',
+      'Repeated use inactivates vitamin B12, which the body needs to maintain the myelin sheath around nerves. The result is a pattern of nerve and spinal-cord injury that neurologists are now seeing in people in their late teens and twenties.'
+    ],
+    effects: ['Effects last seconds to a couple of minutes, which is precisely why people use canister after canister in a session. The reports filed here are dominated not by the high but by what came after: tingling, numb hands and feet, and difficulty walking.'],
+    risks: [
+      { n: '01', title: 'B12 depletion & nerve damage', body: 'Numbness, tingling, weakness, unsteady walking. Can become permanent. The most-reported harm for this product in our registry.' },
+      { n: '02', title: 'Suffocation and fainting', body: 'Inhaling from a mask, bag or enclosed space displaces oxygen. Several reports here involve head injuries from passing out.' },
+      { n: '03', title: 'Cold injury', body: 'Gas leaving a tank is freezing; direct inhalation causes frostbite of the lips, mouth and airway.' },
+      { n: '04', title: 'Blood clots and cardiac events', body: 'Elevated homocysteine from B12 depletion is linked to clots and, in case reports, strokes in young people.' },
+      { n: '05', title: 'Psychiatric effects', body: 'Heavy use is associated with paranoia and psychosis that can outlast the gas by weeks.' }
+    ],
+    interactions: [
+      { with: 'Alcohol', risk: 'Greatly increases the chance of falling, choking, or losing consciousness.' },
+      { with: 'Any sedative', risk: 'Compounds oxygen deprivation and the risk of not waking up.' },
+      { with: 'Existing B12 deficiency', risk: 'Vegetarian or vegan diets, metformin and reflux medication all lower B12 \u2014 damage appears faster.' },
+      { with: 'Pregnancy', risk: 'B12 depletion carries fetal risk; avoid entirely.' }
+    ],
+    dangerSigns: ['Numbness, tingling or weakness in hands or feet', 'Trouble walking, or legs giving way', 'Loss of bladder or bowel control', 'Fainting, or a fall with a head injury', 'Chest pain or one-sided weakness', 'Confusion or paranoia lasting after use'],
+    antidote: 'Neurological symptoms are a reason to be seen promptly, not to wait it out. High-dose B12 treatment works best early \u2014 delay is what makes damage permanent.',
+    dependence: [
+      'Nitrous is not physically addictive in the way opioids are, and there is no dangerous withdrawal syndrome. What people describe instead is compulsive session use \u2014 hundreds of canisters in a night \u2014 which is what drives the B12 injury.',
+      'If you have any numbness or walking difficulty, ask specifically for a B12 and homocysteine test and mention nitrous use. Many people are worked up for months before anyone asks the right question.'
+    ],
+    legalIntro: 'Federally legal as a food-grade product; restrictions target sale for inhalation and sale to minors, and are expanding quickly.',
+    legal: [
+      { state: 'California', status: 'Sale for inhalation prohibited', level: 'ban', since: '2024' },
+      { state: 'Louisiana', status: 'Flavoured nitrous sale banned', level: 'ban', since: '2025' },
+      { state: 'Michigan', status: 'Restricted sale, age verification', level: 'limit', since: '2025' },
+      { state: 'New York', status: 'Sale to under-21s prohibited', level: 'limit', since: '2023' },
+      { state: 'Georgia', status: 'Retail restrictions pending', level: 'limit', since: '2026' },
+      { state: 'Illinois', status: 'No inhalation-specific restriction', level: 'none', since: '\u2014' }
+    ],
+    sources: ['FDA warning on flavoured nitrous oxide products, 2024\u20132025', 'CDC and state health-department advisories', 'Neurology case series on nitrous-related myelopathy', "America's Poison Centers inhalant exposure data"]
+  },
+
+  'Phenibut powder & caps': {
+    title: 'Phenibut powder & capsules', contains: 'Phenibut (beta-phenyl-GABA)', reviewed: '10 Jul 2026',
+    intro: 'A Soviet-era anxiety medicine sold in the US as a "calm" or sleep supplement, usually as loose powder. Withdrawal from it is the dangerous part \u2014 closer to alcohol or benzodiazepine withdrawal than to anything you would expect from a supplement.',
+    soldAs: ['phenibut', 'F-phenibut', 'fluorophenibut', '\u201Ccalm\u201D capsules', 'bulk powder', 'PhGABA'],
+    whatIs: [
+      'Phenibut is a prescription anxiolytic in Russia and some neighbouring countries. In the US it is not approved for any medical use, and the FDA has said it does not meet the definition of a dietary ingredient \u2014 yet it is widely sold as one.',
+      'It acts at GABA-B receptors, and at higher amounts at calcium channels. That is the same broad family of mechanisms as alcohol and baclofen, which explains both the effect and the withdrawal.'
+    ],
+    effects: ['People describe reduced anxiety and sociability that arrives slowly and unpredictably \u2014 which is why redosing is so common and why so many reports involve blackouts. Sold as loose powder, it is routinely measured by eye; several reports here describe exactly that.'],
+    risks: [
+      { n: '01', title: 'Dangerous withdrawal', body: 'Abrupt cessation after regular use can cause seizures, hallucinations and delirium. This is a medical emergency, not discomfort.' },
+      { n: '02', title: 'Blackouts and deep sedation', body: 'Prolonged unconsciousness is common in reports, especially with alcohol \u2014 people are found rather than seeking help themselves.' },
+      { n: '03', title: 'Dosing by eye', body: 'Sold as bulk powder with the active amount in fractions of a gram. Kitchen scales and guesswork are behind many reactions filed here.' },
+      { n: '04', title: 'Fast tolerance', body: 'Effects fade within days of repeated use, pushing people upward into the dependence range quickly.' },
+      { n: '05', title: 'Long, unpredictable duration', body: 'Effects can last a day or more, so people redose while still affected.' }
+    ],
+    interactions: [
+      { with: 'Alcohol', risk: 'The combination behind most blackouts and ER visits reported here. Both depress the same system.' },
+      { with: 'Benzodiazepines', risk: 'Profound sedation and respiratory depression.' },
+      { with: 'Baclofen / GHB', risk: 'Same receptor family; additive and dangerous.' },
+      { with: 'Opioids and tianeptine', risk: 'Stacked respiratory depression.' },
+      { with: 'Sleep medication', risk: 'Including over-the-counter antihistamines \u2014 adds to sedation unpredictably.' }
+    ],
+    dangerSigns: ['Cannot be woken up', 'Breathing slow or irregular', 'Seizure, or shaking that will not stop', 'Hallucinations or not knowing where you are', 'Severe agitation and a racing heart during withdrawal', 'Very high temperature or heavy sweating while stopping'],
+    antidote: 'Naloxone does not work on phenibut \u2014 it is not an opioid. If someone cannot be woken, call 911 and say phenibut or a GABA-B drug may be involved.',
+    dependence: [
+      'Dependence can develop within a couple of weeks of daily use. Withdrawal includes severe anxiety, insomnia, tremor, racing heart and, at its worst, seizures, hallucinations and delirium \u2014 clinically similar to alcohol or benzodiazepine withdrawal.',
+      'Do not stop abruptly on your own. Medically supervised tapers, often using baclofen or a benzodiazepine, are the standard approach. Tell the clinician it is phenibut and how much you have been taking \u2014 many have not seen it before and will treat it wrongly otherwise.'
+    ],
+    legalIntro: 'Not federally scheduled, but not lawful to sell as a dietary supplement either \u2014 which is exactly how it is sold. A few states have acted directly.',
+    legal: [
+      { state: 'Alabama', status: 'Schedule I \u2014 banned', level: 'ban', since: '2021' },
+      { state: 'Louisiana', status: 'Banned', level: 'ban', since: '2022' },
+      { state: 'Florida', status: 'Sale to minors prohibited', level: 'limit', since: '2023' },
+      { state: 'Washington', status: 'No state restriction', level: 'none', since: '\u2014' },
+      { state: 'Colorado', status: 'No state restriction', level: 'none', since: '\u2014' },
+      { state: 'Federal', status: 'Not a lawful dietary ingredient (FDA)', level: 'limit', since: '2019' }
+    ],
+    sources: ['FDA warning letters on phenibut products, 2019\u20132024', 'Published case series on phenibut withdrawal and delirium', "America's Poison Centers exposure data", 'Clinical toxicology reviews of GABA-B agonist withdrawal']
+  },
+
+  'Delta-8 gummies & carts': {
+    title: 'Delta-8 gummies & vape carts', contains: 'Delta-8 THC and related converted cannabinoids', reviewed: '08 Jul 2026',
+    intro: 'Hemp-derived THC sold openly as a legal alternative to cannabis. The reactions reported here are overwhelmingly from edibles: intense panic, racing heart, and hours longer than anyone expected.',
+    soldAs: ['Delta-8', 'D8', 'hemp gummies', '\u201Clegal weed\u201D', 'THC-O', 'HHC'],
+    whatIs: [
+      'Delta-8 THC exists in tiny amounts in hemp and is manufactured at scale by chemically converting CBD. It is intoxicating, and it sits in a legal grey area created by the 2018 Farm Bill \u2014 which is why it appears in gas stations rather than dispensaries.',
+      'Because production is a chemical conversion, the finished product can contain leftover reagents, unintended cannabinoids and inconsistent potency. Independent testing repeatedly finds labels that do not match contents.'
+    ],
+    effects: ['Often described as milder than cannabis, which misleads people into taking a whole package. Edibles take an hour or more to arrive and last six to twelve hours \u2014 the shape of nearly every Delta-8 report in this registry.'],
+    risks: [
+      { n: '01', title: 'Acute anxiety and panic', body: 'The most-reported reaction: panic attacks with chest pain and a racing heart, often mistaken for a heart attack or stroke.' },
+      { n: '02', title: 'Accidental large doses', body: 'Packages sold as one item contain many servings, and effects arrive too late to self-correct.' },
+      { n: '03', title: 'Child poisonings', body: 'Candy-styled packaging drives a steady stream of pediatric exposures; several require hospital admission.' },
+      { n: '04', title: 'Unknown chemistry', body: 'Residual reaction chemicals and unlisted cannabinoids have been found in retail products.' },
+      { n: '05', title: 'Cannabinoid hyperemesis', body: 'Heavy repeated use can cause cycles of severe vomiting that only stop with cessation.' }
+    ],
+    interactions: [
+      { with: 'Alcohol', risk: 'Sharply increases dizziness, vomiting and panic.' },
+      { with: 'Other sedatives', risk: 'Additive impairment; driving risk is badly underestimated.' },
+      { with: 'Heart conditions', risk: 'Tachycardia and blood-pressure swings are riskier with existing cardiac disease.' },
+      { with: 'Nitrous or inhalants', risk: 'Combination appears in our fainting reports.' }
+    ],
+    dangerSigns: ['Chest pain, or a heart rate that will not come down', 'Fainting or repeated near-fainting', 'Vomiting that will not stop', 'Seizure', 'Severe confusion, or not recognising where you are', 'A child has eaten any amount \u2014 call Poison Control immediately'],
+    antidote: 'There is no antidote, and this is very rarely fatal in adults. Somewhere quiet, cool, sitting up, with fluids and someone present, is genuinely the treatment. Call Poison Control if you are frightened \u2014 that is what they are for.',
+    dependence: [
+      'No dangerous withdrawal syndrome. Regular heavy users describe irritability, poor sleep, appetite loss and low mood for one to two weeks after stopping \u2014 unpleasant but not medically dangerous.',
+      'The exception worth knowing: repeated vomiting cycles (cannabinoid hyperemesis) resolve only with stopping, and are frequently misdiagnosed for months.'
+    ],
+    legalIntro: 'Legal status changes constantly and by state \u2014 sometimes mid-year. Legal availability says nothing about consistency or safety.',
+    legal: [
+      { state: 'New York', status: 'Prohibited outside licensed cannabis', level: 'ban', since: '2021' },
+      { state: 'Colorado', status: 'Prohibited', level: 'ban', since: '2021' },
+      { state: 'North Carolina', status: 'Legal, age-restricted', level: 'limit', since: '2024' },
+      { state: 'Texas', status: 'Legal, litigation ongoing', level: 'limit', since: '2021' },
+      { state: 'Pennsylvania', status: 'Unregulated retail sale', level: 'none', since: '\u2014' },
+      { state: 'California', status: 'Intoxicating hemp sale banned', level: 'ban', since: '2024' }
+    ],
+    sources: ['FDA consumer warning on Delta-8 THC products', 'CDC health advisory on Delta-8 adverse events', "America's Poison Centers Delta-8 case data", 'State cannabis-regulator testing reports']
+  },
+
+  'Amanita gummies': {
+    title: 'Amanita gummies', contains: 'Amanita muscaria (muscimol / ibotenic acid)', reviewed: '07 Jul 2026',
+    intro: 'Sold next to the CBD as a "legal mushroom" gummy. It is not psilocybin and does not behave like it \u2014 the reported experience is closer to a deliriant with heavy nausea.',
+    soldAs: ['Amanita muscaria', 'fly agaric', '\u201Clegal mushroom\u201D gummies', 'muscimol gummies', 'Amanita Dream', 'Shroom Boom'],
+    whatIs: [
+      'Amanita muscaria is the red-and-white mushroom; its active compounds are ibotenic acid and muscimol, which act on the GABA and glutamate systems. This is a completely different mechanism from psilocybin mushrooms, and it is not federally controlled \u2014 hence the retail shelf.',
+      'Products are unregulated and unstandardised. How much of the ibotenic acid has converted to muscimol varies by manufacturing process, and that ratio largely determines whether someone has a sedating experience or hours of nausea and delirium.'
+    ],
+    effects: ['Reports describe sedation, disorientation, vivid dream-like states and heavy nausea, with hours of lost time. People frequently say it was nothing like what they expected from a "mushroom" product, and much stronger than the package implied.'],
+    risks: [
+      { n: '01', title: 'Delirium and lost time', body: 'Not knowing where you are or what is real, with little control over the experience \u2014 dangerous if you are alone or in public.' },
+      { n: '02', title: 'Severe nausea and vomiting', body: 'The most-reported symptom for this product; caused largely by unconverted ibotenic acid.' },
+      { n: '03', title: 'Seizures at higher amounts', body: 'Documented in poison-center cases, especially where several gummies were taken.' },
+      { n: '04', title: 'Unstandardised potency', body: 'Two cubes from different jars are not the same dose. Labels frequently do not reflect content.' },
+      { n: '05', title: 'Confusion with psilocybin', body: 'People dose it as though it were psilocybin, which it is not, and get a very different and unwanted experience.' }
+    ],
+    interactions: [
+      { with: 'Alcohol', risk: 'Deepens sedation and confusion, and worsens vomiting.' },
+      { with: 'Benzodiazepines / sleep aids', risk: 'Additive at GABA; can produce prolonged unconsciousness.' },
+      { with: 'Antidepressants', risk: 'Poorly characterised; reported agitation and disorientation.' },
+      { with: 'Any deliriant or anticholinergic', risk: 'Compounds confusion sharply.' }
+    ],
+    dangerSigns: ['Seizure or twitching that will not stop', 'Cannot be woken up', 'Severe agitation or an inability to recognise people', 'Vomiting with nothing staying down', 'Very slow or irregular breathing', 'Injury sustained while disoriented'],
+    antidote: 'No antidote; treatment is supportive \u2014 fluids, a calm dark space, and benzodiazepines if there is seizure or severe agitation. Call Poison Control early, and take the packaging with you.',
+    dependence: ['Physical dependence is not described in the literature and no withdrawal syndrome is documented.', 'The realistic risk is a single frightening experience, an injury sustained during it, or an emergency-room visit \u2014 not addiction.'],
+    legalIntro: 'Federally uncontrolled, which is precisely why it is on shelves. State action has started with food-safety and age rules rather than scheduling.',
+    legal: [
+      { state: 'Louisiana', status: 'Prohibited (except ornamental)', level: 'ban', since: '2005' },
+      { state: 'California', status: 'Banned in food products', level: 'ban', since: '2025' },
+      { state: 'Minnesota', status: 'Age restriction & labelling rules', level: 'limit', since: '2024' },
+      { state: 'Michigan', status: 'Unregulated retail sale', level: 'none', since: '\u2014' },
+      { state: 'Federal', status: 'Not a controlled substance', level: 'none', since: '\u2014' }
+    ],
+    sources: ['FDA statements on Amanita muscaria in food products', "America's Poison Centers Amanita exposure data", 'Clinical toxicology reviews of muscimol and ibotenic acid', 'State health-department advisories, 2024\u20132025']
+  },
+
+  'Kava drinks & caps': {
+    title: 'Kava drinks & capsules', contains: 'Kava (Piper methysticum)', reviewed: '06 Jul 2026',
+    intro: 'A traditional Pacific Islander beverage, now sold in kava bars and as concentrated extract capsules. The lowest-risk product on this site \u2014 with two specific exceptions: your liver, and mixing it with anything sedating.',
+    soldAs: ['kava', 'kava bar shell', 'kava extract capsules', 'awa', 'sakau'],
+    whatIs: [
+      'Kava root, prepared as a water-based drink, has centuries of traditional use in Fiji, Vanuatu, Samoa and Tonga. Its kavalactones act on GABA pathways, producing calm and mild numbness of the mouth.',
+      'The products that generate problems are the concentrated extracts \u2014 capsules and shots, sometimes made with solvents rather than water, at doses far above what anyone drinks traditionally. Traditional aqueous preparation has a substantially better safety record.'
+    ],
+    effects: ['People describe calm, sociability and mouth numbness, without much cognitive impairment at traditional strengths. Reports here mostly concern nausea, unsteadiness when combined with alcohol, and interactions with prescribed medication.'],
+    risks: [
+      { n: '01', title: 'Liver injury', body: 'Rare but serious hepatotoxicity, associated mainly with extracts and heavy daily use. Yellowing skin or eyes, dark urine and right-sided abdominal pain mean stop and get tested.' },
+      { n: '02', title: 'Sedation and falls', body: 'Impaired coordination and driving, particularly with alcohol \u2014 the pattern in reports filed here.' },
+      { n: '03', title: 'Medication interactions', body: 'Metabolised through the same liver enzymes as many prescriptions, changing their levels unpredictably.' },
+      { n: '04', title: 'Dermopathy with heavy use', body: 'Dry, scaly skin from sustained daily consumption; reverses on stopping.' },
+      { n: '05', title: 'Extract inconsistency', body: 'Capsule potency and preparation method vary widely between brands.' }
+    ],
+    interactions: [
+      { with: 'Alcohol', risk: 'Additive sedation, plus additive liver load. The combination in most kava reports here.' },
+      { with: 'Benzodiazepines', risk: 'Marked sedation; avoid combining.' },
+      { with: 'Acetaminophen', risk: 'Additional liver stress.' },
+      { with: 'Antidepressants & antipsychotics', risk: 'Enzyme interactions alter drug levels \u2014 tell your prescriber you drink kava.' },
+      { with: 'Liver disease', risk: 'Avoid entirely if you have any existing liver condition.' }
+    ],
+    dangerSigns: ['Yellowing of the skin or eyes', 'Dark urine, or pale stools', 'Pain under the right ribs', 'Persistent vomiting and severe fatigue', 'Unable to stand or walk safely', 'Confusion or excessive drowsiness'],
+    antidote: 'No antidote is needed for typical use. Signs of liver trouble deserve same-day medical attention and a liver-function blood test \u2014 mention kava explicitly, including capsules.',
+    dependence: ['No physical dependence or withdrawal syndrome is documented. Some heavy daily drinkers describe habit and mild irritability on stopping.', 'The meaningful medical follow-up is liver monitoring for anyone using extracts daily, not addiction treatment.'],
+    legalIntro: 'Legal to sell in the US as a dietary supplement, with an FDA advisory attached regarding liver injury. Some other countries restrict it more tightly.',
+    legal: [
+      { state: 'Federal', status: 'Legal supplement; FDA liver advisory', level: 'limit', since: '2002' },
+      { state: 'Florida', status: 'Legal; kava bars widespread', level: 'none', since: '\u2014' },
+      { state: 'Oregon', status: 'Legal retail sale', level: 'none', since: '\u2014' },
+      { state: 'Hawaii', status: 'Legal; traditional use protected', level: 'none', since: '\u2014' },
+      { state: 'Various (intl.)', status: 'Restricted in some EU states', level: 'limit', since: '2002' }
+    ],
+    sources: ['FDA consumer advisory on kava and liver injury', 'WHO assessment of kava safety', 'Systematic reviews of kavalactone hepatotoxicity', 'Published pharmacokinetic interaction studies']
+  }
+};
+function guideFor(name) {
+  const g = GUIDES[name];
+  if (!g) return null;
+  return g.alias ? GUIDES[g.alias] : g;
+}
+const LEVEL_COLOR = { ban: RED, limit: AMBER, none: '#4A4340' };
+
+const FAMILIES = [
+  { name: 'Za Za', sub: 'tianeptine', match: ['za za'] },
+  { name: 'Tianna', sub: 'tianeptine', match: ['tianna'] },
+  { name: 'Neptune Elixir', sub: 'tianeptine', match: ['neptune'] },
+  { name: 'Galaxy Gas & whippets', sub: 'nitrous oxide', match: ['galaxy gas', 'whippet'] },
+  { name: '7-OH “kratom” tablets & shots', sub: 'concentrated 7-OH \u2014 sold as \u201Ckratom\u201D', match: ['7-oh', 'kratom', 'shot bottle at smoke shop', 'extract shot'] },
+  { name: 'Phenibut powder & caps', sub: 'phenibut', match: ['phenibut', 'powder', 'capsules from a vape shop'] },
+  { name: 'Delta-8 gummies & carts', sub: 'delta-8 THC', match: ['delta-8', 'gas station gummies', 'vape cart', 'edible from gas station', 'gummies'] },
+  { name: 'Amanita gummies', sub: 'amanita muscaria', match: ['amanita', 'shroom boom'] },
+  { name: 'Kava drinks & caps', sub: 'kava', match: ['kava'] }
+];
+function famOf(r) {
+  const b = (r.brand || '').toLowerCase();
+  const hit = FAMILIES.find(fam => fam.match.some(m => b.includes(m)));
+  if (hit) return hit.name;
+  if (r.substance === 'Tianeptine') return 'Za Za';
+  if (r.substance === 'Phenibut') return 'Phenibut powder & caps';
+  if (r.substance === 'Delta-8 THC') return 'Delta-8 gummies & carts';
+  if (r.substance === '7-OH') return '7-OH \u201Ckratom\u201D tablets & shots';
+  return r.brand;
+}
+function famSub(name) {
+  const hit = FAMILIES.find(x => x.name === name);
+  return hit ? hit.sub : '';
+}
+
+const ST_ABBR = { Alabama: 'AL', Arizona: 'AZ', California: 'CA', Colorado: 'CO', Florida: 'FL', Georgia: 'GA', Illinois: 'IL', Kentucky: 'KY', Louisiana: 'LA', Michigan: 'MI', Mississippi: 'MS', 'New York': 'NY', 'North Carolina': 'NC', Ohio: 'OH', Oklahoma: 'OK', Oregon: 'OR', Pennsylvania: 'PA', Tennessee: 'TN', Texas: 'TX', Washington: 'WA' };
+
+const STATES = ['Alabama','Arizona','California','Colorado','Florida','Georgia','Illinois','Kentucky','Louisiana','Michigan','Mississippi','New York','North Carolina','Ohio','Oklahoma','Oregon','Pennsylvania','Tennessee','Texas','Washington'];
+
+const SYMPTOM_CHOICES = ['Racing heart','Vomiting','Nausea','Blackout','Confusion','Panic/anxiety','Trouble breathing','Chest pain','Fainting','Numbness/tingling','Tremors','Sweating','Insomnia','Hallucinations','Severe withdrawal','Trouble walking','Seizure'];
+
+const FLAGGED = ['kill myself','end it','suicid','hurt myself','overdose on purpose','how much to','enough to die','self harm'];
+
+const TODAY = new Date('2026-07-25T12:00:00');
+const TODAY_ISO = '2026-07-25';
+
+function parse(t) {
+  return {
+    id: t[0], date: t[1], substance: t[2], brand: t[3], amount: t[4], takenWith: t[5],
+    symptoms: t[6].split('|'), duration: t[7], help: t[8], outcome: t[9], state: t[10], note: t[11]
+  };
+}
+const HELP_META = {
+  'Emergency room': { label: 'Went to the ER', color: RED },
+  'Urgent care': { label: 'Urgent care', color: AMBER },
+  'Poison Control': { label: 'Called Poison Control', color: BLUE },
+  'None': { label: 'No medical help', color: '#6B635C' }
+};
+function helpMeta(h) { return HELP_META[h] || { label: h, color: '#6B635C' }; }
+function fmtShort(d) {
+  const dt = new Date(d + 'T12:00:00');
+  return dt.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: '2-digit' });
+}
+function fmtLong(d) {
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+function daysAgo(d) { return (TODAY - new Date(d + 'T12:00:00')) / 86400000; }
+function counts(list, keyFn) {
+  const m = new Map();
+  list.forEach(r => { const ks = keyFn(r); (Array.isArray(ks) ? ks : [ks]).forEach(k => m.set(k, (m.get(k) || 0) + 1)); });
+  return [...m.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+}
+
+// API base — override by setting window.STREETMEDWATCH_API before this script runs
+// (e.g. to your deployed backend URL). Defaults to the local backend for development.
+const API = ((typeof window !== 'undefined' && window.STREETMEDWATCH_API) || 'http://localhost:4000') + '/api';
+
+// Map an API report (camelCase incidentDate) into the shape the UI renders (date).
+function fromApi(r) {
+  return {
+    id: r.id, date: r.incidentDate, filed: (r.filedAt || '').slice(0, 10) || r.incidentDate,
+    reporter: r.reporter, substance: r.substance, brand: r.brand, amount: r.amount,
+    takenWith: r.takenWith, symptoms: r.symptoms, duration: r.duration, help: r.help,
+    outcome: r.outcome, state: r.state, note: r.note
+  };
+}
+
+class Component extends DCLogic {
+  state = {
+    page: 'home', query: '', detailId: null, subName: 'Za Za',
+    rq: '', fFam: '', fSub: 'All substances', fOut: 'Any outcome', fHelp: 'Any', sortKey: 'date', sortDir: -1,
+    alertEmail: '', alertState: 'Ohio', alertError: '', alertsDone: false,
+    extra: [], remote: null, loadError: '', submitStatus: 'idle', newId: '', formError: '',
+    form: { brandKey: '', reporter: 'The person it happened to', incidentDate: TODAY_ISO, substance: 'Tianeptine', brand: '', amount: '', takenWith: '', symptoms: [], duration: '3-6 hours', state: 'Ohio', help: 'None', note: '', bot: false }
+  };
+
+  go = (page) => (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    this.setState(st => ({
+      page: page, detailId: null,
+      submitStatus: page === 'submit' ? 'idle' : st.submitStatus,
+      formError: page === 'submit' ? '' : st.formError,
+      form: page === 'submit' && st.submitStatus === 'done'
+        ? { brandKey: '', reporter: 'The person it happened to', incidentDate: TODAY_ISO, substance: 'Tianeptine', brand: '', amount: '', takenWith: '', symptoms: [], duration: '3-6 hours', state: 'Ohio', help: 'None', note: '', bot: false }
+        : st.form
+    }));
+    if (typeof window !== 'undefined') window.scrollTo(0, 0);
+  };
+
+  componentDidMount() {
+    // Load published reports from the backend. Falls back to built-in sample data
+    // if the server can't be reached, so the page is never empty.
+    fetch(`${API}/reports?limit=200`)
+      .then(r => r.json())
+      .then(d => this.setState({ remote: (d.reports || []).map(fromApi) }))
+      .catch(() => this.setState({ loadError: 'Could not reach the server — showing sample data.' }));
+  }
+
+  all() {
+    const base = this.state.remote ? this.state.remote : RAW.map(parse);
+    return this.state.extra.concat(base);
+  }
+
+  openReport = (id) => () => {
+    this.setState({ page: 'reports', detailId: id });
+    if (typeof window !== 'undefined') window.scrollTo(0, 0);
+  };
+
+  openBrand = (name) => () => {
+    this.setState({ page: 'reports', detailId: null, fFam: name, rq: '', fSub: 'All substances', fHelp: 'Any' });
+    if (typeof window !== 'undefined') window.scrollTo(0, 0);
+  };
+
+  openSubstance = (name) => () => {
+    this.setState({ page: 'substance', subName: name, detailId: null });
+    if (typeof window !== 'undefined') window.scrollTo(0, 0);
+  };
+
+  decorate(r) {
+    return Object.assign({}, r, {
+      dateShort: fmtShort(r.date),
+      reporter: r.reporter || 'The person it happened to',
+      filedLong: fmtLong(r.filed || r.date),
+      dateLong: fmtLong(r.date),
+      symptomLine: r.symptoms.join(' · '),
+      helpLabel: helpMeta(r.help).label,
+      helpColor: helpMeta(r.help).color,
+      open: this.openReport(r.id)
+    });
+  }
+
+  filtered() {
+    const s = this.state;
+    const q = s.rq.trim().toLowerCase();
+    let list = this.all().filter(r => {
+      if (s.fFam && famOf(r) !== s.fFam) return false;
+      if (s.fSub !== 'All substances' && r.substance !== s.fSub) return false;
+      if (s.fHelp !== 'Any' && r.help !== s.fHelp) return false;
+      if (!q) return true;
+      return (r.substance + ' ' + r.brand + ' ' + r.symptoms.join(' ') + ' ' + r.state + ' ' + r.note).toLowerCase().includes(q);
+    });
+    const k = s.sortKey, dir = s.sortDir;
+    const helpRank = { 'Emergency room': 3, 'Urgent care': 2, 'Poison Control': 1, 'None': 0 };
+    list.sort((a, b) => {
+      let av, bv;
+      if (k === 'date') { av = a.date; bv = b.date; }
+      else if (k === 'brand') { av = a.brand; bv = b.brand; }
+      else { av = helpRank[a.help] || 0; bv = helpRank[b.help] || 0; }
+      return av < bv ? -dir : av > bv ? dir : 0;
+    });
+    return list;
+  }
+
+  sortBy = (key) => () => this.setState(s => ({ sortKey: key, sortDir: s.sortKey === key ? -s.sortDir : -1 }));
+
+  setBrandKey = (e) => {
+    const key = e.target.value;
+    const hit = BRANDS.find(b => b[0] === key);
+    this.setState(s => ({
+      formError: '',
+      form: Object.assign({}, s.form, {
+        brandKey: key,
+        brand: hit ? hit[0] : '',
+        substance: hit ? hit[1] : s.form.substance
+      })
+    }));
+  };
+
+  setReporter = (name) => () => this.setState(s => ({ form: Object.assign({}, s.form, { reporter: name }), formError: '' }));
+
+  setForm = (field) => (e) => {
+    const v = e && e.target ? e.target.value : e;
+    this.setState(s => ({ form: Object.assign({}, s.form, { [field]: v }), formError: '' }));
+  };
+
+  toggleSymptom = (name) => () => this.setState(s => {
+    const has = s.form.symptoms.includes(name);
+    return { form: Object.assign({}, s.form, { symptoms: has ? s.form.symptoms.filter(x => x !== name) : s.form.symptoms.concat(name) }), formError: '' };
+  });
+
+  submitReport = (e) => {
+    e.preventDefault();
+    const f = this.state.form;
+    if (!f.brandKey) return this.setState({ formError: 'Please choose the brand or street name — that is what people search for.' });
+    if (f.brandKey === 'other' && !f.brand.trim()) return this.setState({ formError: 'Please type the name printed on the package.' });
+    if (!f.incidentDate) return this.setState({ formError: 'Please give the date this happened — even an approximate day helps us spot spikes.' });
+    if (f.incidentDate > TODAY_ISO) return this.setState({ formError: 'That date is in the future. Please check it.' });
+    if (!f.symptoms.length) return this.setState({ formError: 'Please select at least one symptom — that is the part other people search for.' });
+    if (!f.bot) return this.setState({ formError: 'Please confirm the bot check before submitting.' });
+    this.setState({ submitStatus: 'submitting' });
+    // The server re-validates, runs the risk screening (self-harm / dosing-to-harm
+    // language is held for review), and anonymizes the free text before storing.
+    fetch(`${API}/reports`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        brandKey: f.brandKey, brand: f.brand, substance: f.substance, reporter: f.reporter,
+        incidentDate: f.incidentDate, symptoms: f.symptoms, duration: f.duration, state: f.state,
+        help: f.help, outcome: f.outcome, amount: f.amount, takenWith: f.takenWith, note: f.note,
+        bot: f.bot, turnstileToken: this.state.turnstileToken
+      })
+    }).then(async res => {
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 202 && data.status === 'held') {
+        return this.setState({ submitStatus: 'held' });
+      }
+      if (!res.ok) {
+        return this.setState({ submitStatus: 'idle', formError: data.error || 'Something went wrong. Please try again.' });
+      }
+      const rec = fromApi(data.report);
+      this.setState(s => ({ extra: [rec].concat(s.extra), submitStatus: 'done', newId: data.id }));
+    }).catch(() => {
+      this.setState({ submitStatus: 'idle', formError: 'Could not reach the server. Please try again.' });
+    });
+  };
+
+  submitAlert = (e) => {
+    e.preventDefault();
+    const em = this.state.alertEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return this.setState({ alertError: 'Enter an email we can reach you at.' });
+    fetch(`${API}/alerts`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: em, state: this.state.alertState })
+    }).then(async res => {
+      if (res.ok) return this.setState({ alertsDone: true, alertError: '' });
+      const data = await res.json().catch(() => ({}));
+      this.setState({ alertError: data.error || 'Could not sign you up. Please try again.' });
+    }).catch(() => {
+      this.setState({ alertError: 'Could not reach the server. Please try again.' });
+    });
+  };
+
+  renderVals() {
+    const s = this.state;
+    const all = this.all();
+    const total = all.length;
+    const page = s.page;
+
+    // product ranking: last 90 days vs prior 90
+    const recent = all.filter(r => daysAgo(r.date) <= 90);
+    const prior = all.filter(r => daysAgo(r.date) > 90 && daysAgo(r.date) <= 180);
+    const rc = counts(recent, famOf);
+    const pc = new Map(counts(prior, famOf).map(x => [x.name, x.count]));
+    const max = rc.length ? rc[0].count : 1;
+    const brandBoard = rc.slice(0, 7).map((x, i) => {
+      const before = pc.get(x.name) || 0;
+      const d = before ? Math.round(((x.count - before) / before) * 100) : null;
+      return {
+        rank: String(i + 1).padStart(2, '0'), name: x.name, soldAs: 'contains ' + famSub(x.name),
+        count: x.count, pct: Math.round((x.count / max) * 100),
+        delta: d === null ? 'new' : (d > 0 ? '+' + d + '%' : d + '%'),
+        deltaColor: d === null ? '#C98A16' : (d > 0 ? '#E88A7D' : '#8FB79F'),
+        open: this.openBrand(x.name)
+      };
+    });
+    const famAll = counts(all, famOf);
+    const brandTiles = famAll.slice(0, 6).map(x => ({
+      name: x.name, sub: famSub(x.name), count: x.count, open: this.openBrand(x.name)
+    }));
+
+    // timeline, 12 months
+    const buckets = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(2026, 6 - i, 1);
+      buckets.push({ key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), label: d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), n: 0 });
+    }
+    const bi = new Map(buckets.map(b => [b.key, b]));
+    all.forEach(r => { const b = bi.get(r.date.slice(0, 7)); if (b) b.n++; });
+    const bmax = Math.max.apply(null, buckets.map(b => b.n).concat([1]));
+    const timeline = buckets.map(b => ({ label: b.label + ': ' + b.n + ' reports', pct: Math.max(4, Math.round((b.n / bmax) * 100)) }));
+
+    const symC = counts(all, r => r.symptoms);
+    const smax = symC.length ? symC[0].count : 1;
+    const symptomChart = symC.slice(0, 8).map(x => ({ name: x.name, count: x.count, pct: Math.round((x.count / smax) * 100) }));
+
+    const erPct = Math.round((all.filter(r => r.help === 'Emergency room').length / total) * 100);
+    const feedLen = this.props.feedLength || 6;
+    const feed = all.slice().sort((a, b) => a.date < b.date ? 1 : -1).slice(0, feedLen).map(r => this.decorate(r));
+
+    // home search suggestions
+    const q = s.query.trim().toLowerCase();
+    const subNames = Object.keys(SOLD_AS);
+    const suggestions = !q ? [] : subNames.filter(n => (n + ' ' + SOLD_AS[n]).toLowerCase().includes(q)).slice(0, 5).map(n => ({
+      name: n, soldAs: SOLD_AS[n], count: all.filter(r => r.substance === n).length, open: this.openSubstance(n)
+    }));
+
+    // explorer
+    const rows = this.filtered().map((r, i) => {
+      const d = this.decorate(r);
+      d.zebra = i % 2 ? '#FBF9F4' : 'transparent';
+      d.onKey = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); d.open(); } };
+      return d;
+    });
+    const mark = (k) => s.sortKey === k ? (s.sortDir === -1 ? '↓' : '↑') : '';
+    const detailRec = s.detailId ? all.find(r => r.id === s.detailId) : null;
+    let detail = null;
+    if (detailRec) {
+      const fam = famOf(detailRec);
+      const sub = all.filter(r => famOf(r) === fam);
+      detail = this.decorate(detailRec);
+      detail.family = fam;
+      detail.subCount = sub.length;
+      detail.subEr = sub.filter(r => r.help === 'Emergency room').length;
+      detail.openSubstance = this.openSubstance(fam);
+    }
+
+    let snapshot = null;
+    if (s.fFam || s.fSub !== 'All substances') {
+      const sub = s.fFam ? all.filter(r => famOf(r) === s.fFam) : all.filter(r => r.substance === s.fSub);
+      const sc = counts(sub, r => r.symptoms);
+      const m = sc.length ? sc[0].count : 1;
+      const bc = counts(sub, r => r.brand);
+      snapshot = {
+        name: s.fFam || s.fSub, count: sub.length,
+        erPct: sub.length ? Math.round((sub.filter(r => r.help === 'Emergency room').length / sub.length) * 100) : 0,
+        topBrand: bc.length ? bc[0].name : '—',
+        symptoms: sc.slice(0, 4).map(x => ({ name: x.name, count: x.count, pct: Math.round((x.count / m) * 100) }))
+      };
+    }
+
+    // product guide page
+    const subName = s.subName;
+    const gd = guideFor(subName) || GUIDES['Za Za'];
+    const gRecs = all.filter(r => famOf(r) === subName);
+    const gSym = counts(gRecs, r => r.symptoms);
+    const gSymMax = gSym.length ? gSym[0].count : 1;
+    const gBr = counts(gRecs, r => r.brand);
+    const gBrMax = gBr.length ? gBr[0].count : 1;
+    const g = {
+      title: gd.title, contains: gd.contains, reviewed: gd.reviewed, intro: gd.intro,
+      soldAs: gd.soldAs, whatIs: gd.whatIs, effects: gd.effects, risks: gd.risks,
+      interactions: gd.interactions, dangerSigns: gd.dangerSigns, antidote: gd.antidote,
+      dependence: gd.dependence, legalIntro: gd.legalIntro,
+      legal: gd.legal.map(l => Object.assign({}, l, { color: LEVEL_COLOR[l.level] || '#4A4340' })),
+      sources: gd.sources,
+      count: gRecs.length,
+      erPct: gRecs.length ? Math.round((gRecs.filter(r => r.help === 'Emergency room').length / gRecs.length) * 100) : 0,
+      states: new Set(gRecs.map(r => r.state)).size,
+      symptoms: gSym.slice(0, 5).map(x => ({ name: x.name, count: x.count, pct: Math.round((x.count / gSymMax) * 100) })),
+      brands: gBr.slice(0, 4).map(x => ({ name: x.name, count: x.count, pct: Math.round((x.count / gBrMax) * 100) })),
+      recent: gRecs.slice(0, 4).map(r => this.decorate(r))
+    };
+
+    const f = s.form;
+    const symptomChoices = SYMPTOM_CHOICES.map(n => {
+      const on = f.symptoms.includes(n);
+      return { name: n, on: on, toggle: this.toggleSymptom(n), bg: on ? '#171310' : 'transparent', fg: on ? '#F7F4EE' : '#171310' };
+    });
+
+    return {
+      totalReports: total, last30: all.filter(r => daysAgo(r.date) <= 30).length, erPct: erPct,
+      substanceCount: subNames.length,
+      isHome: page === 'home', isReports: page === 'reports', isSubmit: page === 'submit',
+      isSubstance: page === 'substance', isGuide: page === 'guide', isEmergency: page === 'emergency', isAbout: page === 'about',
+      goHome: this.go('home'), goReports: this.go('reports'), goSubmit: this.go('submit'),
+      goEmergency: this.go('emergency'), goAbout: this.go('about'),
+      goGuide: this.go('guide'),
+      guideCards: FAMILIES.map(fam => {
+        const recs = all.filter(r => famOf(r) === fam.name);
+        const gd = guideFor(fam.name);
+        return {
+          name: fam.name, sub: fam.sub, count: recs.length,
+          er: recs.filter(r => r.help === 'Emergency room').length,
+          ready: true, notReady: false,
+          status: 'Full guide', statusColor: GREEN,
+          reviewed: gd ? gd.reviewed : '',
+          open: this.openSubstance(fam.name)
+        };
+      }).sort((a, b) => b.count - a.count),
+
+      query: s.query, onQuery: (e) => this.setState({ query: e.target.value }),
+      onSearchSubmit: (e) => { e.preventDefault(); this.setState({ page: 'reports', detailId: null, fFam: '', rq: s.query }); },
+      suggestions: suggestions, hasSuggestions: suggestions.length > 0,
+
+      brandBoard: brandBoard, brandTiles: brandTiles, timeline: timeline,
+      timelineStart: buckets[0].label, timelineEnd: buckets[buckets.length - 1].label,
+      symptomChart: symptomChart, feed: feed,
+
+      alertEmail: s.alertEmail, alertState: s.alertState, alertError: s.alertError,
+      alertsDone: s.alertsDone, alertsOpen: !s.alertsDone, states: STATES,
+      onAlertEmail: (e) => this.setState({ alertEmail: e.target.value, alertError: '' }),
+      onAlertState: (e) => this.setState({ alertState: e.target.value }),
+      onAlertSubmit: this.submitAlert,
+
+      rq: s.rq, onRq: (e) => this.setState({ rq: e.target.value }),
+      fSub: s.fSub, onFSub: (e) => this.setState({ fSub: e.target.value }),
+      fHelp: s.fHelp, onFHelp: (e) => this.setState({ fHelp: e.target.value }),
+      substanceOptions: ['All substances'].concat(subNames),
+      helpOptions: ['Any', 'None', 'Poison Control', 'Urgent care', 'Emergency room'],
+      resetFilters: () => this.setState({ rq: '', fFam: '', fSub: 'All substances', fHelp: 'Any' }),
+      famFilter: s.fFam, hasFamFilter: !!s.fFam, clearFam: () => this.setState({ fFam: '' }),
+      rows: rows, hasRows: rows.length > 0, noRows: rows.length === 0,
+      filteredCount: rows.length,
+      sortDate: this.sortBy('date'), sortSub: this.sortBy('brand'), sortHelp: this.sortBy('help'),
+      sortMark: { date: mark('date'), brand: mark('brand'), help: mark('help') },
+      detail: detail, hasDetail: !!detail, showExplorer: !detail,
+      closeDetail: () => this.setState({ detailId: null }),
+      hasSnapshot: !!snapshot, snapshot: snapshot || { symptoms: [] },
+
+      subName: subName, g: g,
+      viewSubReports: () => this.setState({ page: 'reports', detailId: null, fFam: subName, fSub: 'All substances', rq: '' }),
+
+      todayIso: TODAY_ISO,
+      form: f, symptomChoices: symptomChoices,
+      onFormDate: this.setForm('incidentDate'),
+      reporterChoices: ['The person it happened to', 'Parent or caregiver', 'Healthcare provider', 'Friend or bystander'].map(n => ({
+        name: n, on: f.reporter === n, pick: this.setReporter(n),
+        bg: f.reporter === n ? '#171310' : 'transparent', fg: f.reporter === n ? '#F7F4EE' : '#171310'
+      })),
+      brandOptions: [{ key: '', label: 'Select the name on the package…' }]
+        .concat(BRANDS.map(b => ({ key: b[0], label: b[0] + ' — ' + b[1] })))
+        .concat([{ key: 'other', label: 'Not listed / I don\u2019t know the name' }]),
+      brandIsOther: f.brandKey === 'other',
+      brandPicked: !!f.brandKey && f.brandKey !== 'other',
+      brandReportCount: all.filter(r => r.brand === f.brand).length,
+      onFormBrandKey: this.setBrandKey,
+      substanceFormOptions: subNames.concat(['Something else']),
+      durationOptions: ['Under an hour', '1-3 hours', '3-6 hours', '6-12 hours', '12-24 hours', '1-3 days', 'More than a week'],
+      helpFormOptions: ['None', 'Poison Control', 'Urgent care', 'Emergency room'],
+      onFormSubstance: this.setForm('substance'), onFormBrand: this.setForm('brand'), onFormAmount: this.setForm('amount'),
+      onFormWith: this.setForm('takenWith'), onFormDuration: this.setForm('duration'), onFormState: this.setForm('state'),
+      onFormHelp: this.setForm('help'), onFormNote: this.setForm('note'),
+      toggleBot: () => this.setState(st => ({ form: Object.assign({}, st.form, { bot: !st.form.bot }), formError: '' })),
+      botBg: f.bot ? '#171310' : '#FFFDF8',
+      onReportSubmit: this.submitReport,
+      formError: s.formError, hasFormError: !!s.formError,
+      submitting: s.submitStatus === 'submitting',
+      submitLabel: s.submitStatus === 'submitting' ? 'Submitting…' : 'Submit report',
+      submitOpen: s.submitStatus === 'idle' || s.submitStatus === 'submitting',
+      submitDone: s.submitStatus === 'done', submitHeld: s.submitStatus === 'held',
+      newId: s.newId,
+      backToForm: () => this.setState({ submitStatus: 'idle' }),
+
+      dangerSigns: ['Breathing is slow, shallow, gasping, or stopped', 'You cannot wake the person up', 'Lips, face or fingertips look blue or gray', 'Seizure or uncontrolled shaking', 'Chest pain, or a heart rate that will not come down', 'Severe confusion, or not knowing where they are', 'Very high temperature with hot, dry skin', 'Repeated vomiting with no fluids staying down'],
+      verifySteps: [
+        { n: '01', title: 'Bot check at submission', body: 'A challenge blocks automated flooding. No account and no email are required, so a person can report in two minutes without leaving a trail.' },
+        { n: '02', title: 'Automated risk screening', body: 'Every submission is screened for self-harm language and dosing-to-harm questions. Flagged reports are held, not published, until a trained reviewer reads them.' },
+        { n: '03', title: 'Anonymization before publication', body: 'Names, locations narrower than a state, and identifying detail are removed. What remains is published as written — we do not rewrite people\u2019s accounts.' },
+        { n: '04', title: 'Clinical claims sourced separately', body: 'Nothing on a substance page comes from user reports alone. Risk, interaction and withdrawal statements are drawn from published clinical and regulatory sources, listed on every page.' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>
