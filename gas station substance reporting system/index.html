@@ -1454,7 +1454,7 @@ function counts(list, keyFn) {
 
 // API base — override by setting window.STREETMEDWATCH_API before this script runs
 // (e.g. to your deployed backend URL). Defaults to the local backend for development.
-const API = ((typeof window !== 'undefined' && window.STREETMEDWATCH_API) || 'http://localhost:4000') + '/api';
+const API = ((typeof window !== 'undefined' && window.STREETMEDWATCH_API) || 'observant-bravery-production-34bd.up.railway.app') + '/api';
 
 // Map an API report (camelCase incidentDate) into the shape the UI renders (date).
 function fromApi(r) {
