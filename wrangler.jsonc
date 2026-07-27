@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "streetmedwatch2",
+  "compatibility_date": "2026-07-27",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "gas station substance reporting system"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}
